@@ -1,0 +1,91 @@
+Feature map:
+
+
+    Jewelry SaaS
+    │
+    ├── Auth & Shop Management
+    │   ├── Register shop
+    │   ├── Login
+    │   ├── Roles: Owner, Manager, Staff
+    │   └── Multi-tenant shop access
+    │
+    ├── Inventory
+    │   ├── Jewelry items
+    │   ├── Gold weight / carat
+    │   ├── Barcode / SKU
+    │   ├── Stock status
+    │   └── Category
+    │
+    ├── Gold Rate
+    │   ├── Daily rate update
+    │   ├── 18K / 21K / 22K / 24K
+    │   └── Rate history
+    │
+    ├── Price Calculator
+    │   ├── Gold value
+    │   ├── Making charge
+    │   ├── Wastage
+    │   ├── Stone price
+    │   ├── Tax / discount
+    │   └── Final price
+    │
+    ├── Sales / POS
+    │   ├── Create sale
+    │   ├── Generate invoice
+    │   ├── Payment
+    │   ├── Refund
+    │   └── Mark stock as sold
+    │
+    ├── Old Gold Exchange
+    │   ├── Weight
+    │   ├── Purity
+    │   ├── Deduction
+    │   └── Adjust with new sale
+    │
+    ├── Custom Orders
+    │   ├── Customer design
+    │   ├── Assign craftsman
+    │   ├── Track status
+    │   └── Delivery date
+    │
+    ├── Customers
+    │   ├── Profile
+    │   ├── Purchase history
+    │   ├── Birthday / anniversary
+    │   └── Notes
+    │
+    ├── Reports
+    │   ├── Daily closing
+    │   ├── Sales summary
+    │   ├── Inventory value
+    │   ├── Gold sold report
+    │   └── Profit estimate
+    │
+    └── Security
+        ├── Audit logs
+        ├── Role permission
+        ├── Shop isolation
+        └── Backup
+
+
+SaaS architecture:
+
+
+Backend module architecture:
+
+    NestJS Backend
+    │
+    ├── Auth Module
+    ├── Users Module
+    ├── Shops Module
+    ├── Inventory Module
+    ├── Gold Rates Module
+    ├── Calculator Module
+    ├── Sales Module
+    ├── Invoices Module
+    ├── Customers Module
+    ├── Old Gold Exchange Module
+    ├── Custom Orders Module
+    ├── Reports Module
+    ├── Audit Logs Module
+    └── Notifications Module

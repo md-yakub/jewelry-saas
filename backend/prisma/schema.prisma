@@ -1,0 +1,335 @@
+// See https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference for details.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleCode {
+  SUPER_ADMIN
+  SHOP_OWNER
+  MANAGER
+  STAFF
+}
+
+enum Carat {
+  K18
+  K21
+  K22
+  K24
+}
+
+enum ItemStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  MIXED
+}
+
+enum SaleStatus {
+  COMPLETED
+  REFUNDED
+}
+
+enum CustomOrderStatus {
+  PENDING
+  DESIGN_CONFIRMED
+  IN_PROGRESS
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  code        RoleCode @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id               String       @id @default(uuid())
+  name             String
+  email            String       @unique
+  phone            String?
+  passwordHash     String
+  refreshTokenHash String?
+  isSuperAdmin     Boolean      @default(false)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  memberships      ShopMember[]
+  createdSales     Sale[]       @relation("SaleCreatedBy")
+  auditLogs        AuditLog[]
+}
+
+model Shop {
+  id                String            @id @default(uuid())
+  name              String
+  slug              String            @unique
+  address           String?
+  phone             String?
+  email             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  members           ShopMember[]
+  categories        JewelryCategory[]
+  items             JewelryItem[]
+  customers         Customer[]
+  goldRates         GoldRate[]
+  sales             Sale[]
+  invoices          Invoice[]
+  payments          Payment[]
+  oldGoldExchanges  OldGoldExchange[]
+  customOrders      CustomOrder[]
+  craftsmen         Craftsman[]
+  auditLogs         AuditLog[]
+}
+
+model ShopMember {
+  id        String   @id @default(uuid())
+  shopId    String
+  userId    String
+  role      RoleCode
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, userId])
+  @@index([userId])
+}
+
+model JewelryCategory {
+  id          String       @id @default(uuid())
+  shopId       String
+  name         String
+  description  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  shop         Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  items        JewelryItem[]
+
+  @@unique([shopId, name])
+  @@index([shopId])
+}
+
+model JewelryItem {
+  id                   String       @id @default(uuid())
+  shopId                String
+  categoryId            String?
+  name                  String
+  sku                   String
+  barcode               String
+  goldWeight            Decimal      @db.Decimal(12, 3)
+  stoneWeight           Decimal      @default(0) @db.Decimal(12, 3)
+  netGoldWeight         Decimal      @db.Decimal(12, 3)
+  carat                 Carat
+  makingCharge          Decimal      @default(0) @db.Decimal(12, 2)
+  wastagePercentage     Decimal      @default(0) @db.Decimal(5, 2)
+  stonePrice            Decimal      @default(0) @db.Decimal(12, 2)
+  status                ItemStatus   @default(AVAILABLE)
+  purchaseCost          Decimal      @default(0) @db.Decimal(12, 2)
+  sellingPriceEstimate  Decimal      @default(0) @db.Decimal(12, 2)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  shop                  Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category              JewelryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  saleItems             SaleItem[]
+
+  @@unique([shopId, sku])
+  @@unique([shopId, barcode])
+  @@index([shopId, status])
+}
+
+model GoldRate {
+  id           String   @id @default(uuid())
+  shopId        String
+  rate18K       Decimal  @db.Decimal(12, 2)
+  rate21K       Decimal  @db.Decimal(12, 2)
+  rate22K       Decimal  @db.Decimal(12, 2)
+  rate24K       Decimal  @db.Decimal(12, 2)
+  effectiveDate DateTime @default(now())
+  createdById   String?
+  createdAt     DateTime @default(now())
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, effectiveDate])
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  shopId       String
+  name         String
+  phone        String
+  email        String?
+  address      String?
+  birthday     DateTime?
+  anniversary  DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sales        Sale[]
+  exchanges    OldGoldExchange[]
+  customOrders CustomOrder[]
+
+  @@unique([shopId, phone])
+  @@index([shopId, name])
+}
+
+model Craftsman {
+  id          String   @id @default(uuid())
+  shopId       String
+  name         String
+  phone        String?
+  specialty    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customOrders CustomOrder[]
+
+  @@index([shopId, name])
+}
+
+model Sale {
+  id                String            @id @default(uuid())
+  shopId             String
+  customerId         String?
+  createdById        String
+  status             SaleStatus       @default(COMPLETED)
+  subtotal           Decimal           @db.Decimal(12, 2)
+  taxAmount          Decimal           @default(0) @db.Decimal(12, 2)
+  discountAmount     Decimal           @default(0) @db.Decimal(12, 2)
+  totalAmount        Decimal           @db.Decimal(12, 2)
+  oldGoldDeduction   Decimal           @default(0) @db.Decimal(12, 2)
+  refundedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  shop               Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer           Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy          User              @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items              SaleItem[]
+  invoice            Invoice?
+  payments           Payment[]
+  linkedExchanges    OldGoldExchange[]
+
+  @@index([shopId, createdAt])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id              String    @id @default(uuid())
+  saleId           String
+  itemId           String
+  itemNameSnapshot String
+  skuSnapshot      String
+  quantity         Int       @default(1)
+  goldWeight       Decimal   @db.Decimal(12, 3)
+  price            Decimal   @db.Decimal(12, 2)
+  createdAt        DateTime  @default(now())
+  sale             Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  item             JewelryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([saleId, itemId])
+  @@index([itemId])
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  shopId         String
+  saleId         String   @unique
+  invoiceNumber  String
+  htmlContent    String
+  issuedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, invoiceNumber])
+  @@index([shopId, issuedAt])
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  shopId       String
+  saleId       String
+  method       PaymentMethod
+  amount       Decimal       @db.Decimal(12, 2)
+  reference    String?
+  createdAt    DateTime      @default(now())
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sale         Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, method])
+  @@index([saleId])
+}
+
+model OldGoldExchange {
+  id                  String   @id @default(uuid())
+  shopId               String
+  customerId           String
+  linkedSaleId         String?
+  grossWeight          Decimal  @db.Decimal(12, 3)
+  purityCarat          Carat
+  deductionPercentage  Decimal  @default(0) @db.Decimal(5, 2)
+  finalWeight          Decimal  @db.Decimal(12, 3)
+  calculatedValue      Decimal  @db.Decimal(12, 2)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  shop                 Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer             Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  linkedSale           Sale?    @relation(fields: [linkedSaleId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, createdAt])
+  @@index([customerId])
+}
+
+model CustomOrder {
+  id               String            @id @default(uuid())
+  shopId            String
+  customerId        String
+  craftsmanId       String?
+  status            CustomOrderStatus @default(PENDING)
+  designNotes       String
+  estimatedWeight   Decimal           @db.Decimal(12, 3)
+  advancePayment    Decimal           @default(0) @db.Decimal(12, 2)
+  deliveryDate      DateTime
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  shop              Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer          Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  craftsman         Craftsman?        @relation(fields: [craftsmanId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, status])
+  @@index([deliveryDate])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId      String?
+  shopId      String
+  action      String
+  entityType  String
+  entityId    String?
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, createdAt])
+  @@index([action])
+}
