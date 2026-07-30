@@ -52,28 +52,41 @@ export class AuthService {
         },
       });
 
-      await tx.shopMember.create({
+      const membership = await tx.shopMember.create({
         data: {
           shopId: shop.id,
           userId: owner.id,
           role: RoleCode.SHOP_OWNER,
         },
+        select: {
+          shopId: true,
+          role: true,
+          shop: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
+        },
       });
 
-      return { shop, owner };
+      return { shop, owner, membership };
     });
 
-    const tokens = await this.generateTokens(result.owner);
+    const tokens = await this.generateTokens(result.owner, result.membership);
     await this.saveRefreshTokenHash(result.owner.id, tokens.refreshToken);
 
     return {
       message: "Shop registered successfully",
       shop: result.shop,
+      membership: result.membership,
+      memberships: [result.membership],
       user: {
         id: result.owner.id,
         name: result.owner.name,
         email: result.owner.email,
         isSuperAdmin: result.owner.isSuperAdmin,
+        isActive: result.owner.isActive,
       },
       ...tokens,
     };
@@ -97,7 +110,11 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const tokens = await this.generateTokens(user);
+    const memberships = await this.getMemberships(user.id);
+    const defaultMembership = user.isSuperAdmin
+      ? null
+      : (memberships[0] ?? null);
+    const tokens = await this.generateTokens(user, defaultMembership);
     await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
 
     return {
@@ -107,8 +124,11 @@ export class AuthService {
         name: user.name,
         email: user.email,
         isSuperAdmin: user.isSuperAdmin,
+        isActive: user.isActive,
       },
-      memberships: await this.getMemberships(user.id),
+      shop: defaultMembership?.shop ?? null,
+      membership: defaultMembership,
+      memberships,
       ...tokens,
     };
   }
@@ -119,7 +139,7 @@ export class AuthService {
       where: { id: payload.sub },
     });
 
-    if (!user?.refreshTokenHash) {
+    if (!user || !user.isActive || !user.refreshTokenHash) {
       throw new UnauthorizedException("Refresh token not found");
     }
 
@@ -131,11 +151,25 @@ export class AuthService {
       throw new UnauthorizedException("Invalid refresh token");
     }
 
-    const tokens = await this.generateTokens(user);
+    const memberships = await this.getMemberships(user.id);
+    const defaultMembership = user.isSuperAdmin
+      ? null
+      : (memberships[0] ?? null);
+    const tokens = await this.generateTokens(user, defaultMembership);
     await this.saveRefreshTokenHash(user.id, tokens.refreshToken);
 
     return {
       message: "Token refreshed successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isSuperAdmin: user.isSuperAdmin,
+        isActive: user.isActive,
+      },
+      shop: defaultMembership?.shop ?? null,
+      membership: defaultMembership,
+      memberships,
       ...tokens,
     };
   }
@@ -158,6 +192,7 @@ export class AuthService {
         email: true,
         phone: true,
         isSuperAdmin: true,
+        isActive: true,
         createdAt: true,
       },
     });
@@ -207,11 +242,18 @@ export class AuthService {
     return candidate;
   }
 
-  private async generateTokens(user: User) {
+  private async generateTokens(
+    user: User,
+    membership:
+      | Awaited<ReturnType<AuthService["getMemberships"]>>[number]
+      | null,
+  ) {
     const payload = {
       sub: user.id,
       email: user.email,
       isSuperAdmin: user.isSuperAdmin,
+      shopId: membership?.shopId ?? null,
+      shopRole: membership?.role ?? null,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

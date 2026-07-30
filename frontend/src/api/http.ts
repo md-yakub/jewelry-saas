@@ -1,9 +1,7 @@
-import axios, {
-  type AxiosError,
-  type InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
 type Envelope<T> = {
   data: T;
@@ -57,7 +55,7 @@ http.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
       return Promise.reject(error);
     }
@@ -78,15 +76,14 @@ http.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const response = await axios.post<Envelope<{ accessToken: string; refreshToken: string }>>(
-        `${API_BASE_URL}/auth/refresh`,
-        { refreshToken },
-      );
+      const response = await axios.post<
+        Envelope<{ accessToken: string; refreshToken: string }>
+      >(`${API_BASE_URL}/auth/refresh`, { refreshToken });
 
       const tokens = response.data.data;
       setAccessToken(tokens.accessToken);
-      localStorage.setItem('accessToken', tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
+      localStorage.setItem("accessToken", tokens.accessToken);
+      localStorage.setItem("refreshToken", tokens.refreshToken);
 
       pendingRequests.forEach((request) => request.resolve(tokens.accessToken));
       pendingRequests = [];
@@ -94,12 +91,12 @@ http.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
       return http(originalRequest);
     } catch (refreshError) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('authUser');
-      localStorage.removeItem('memberships');
-      localStorage.removeItem('selectedShopId');
-      localStorage.removeItem('selectedRole');
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("authUser");
+      localStorage.removeItem("memberships");
+      localStorage.removeItem("selectedShopId");
+      localStorage.removeItem("selectedRole");
       pendingRequests.forEach((request) => request.reject(refreshError));
       pendingRequests = [];
       return Promise.reject(refreshError);
@@ -120,7 +117,7 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
 
   const message = error.response?.data?.message;
   if (Array.isArray(message)) {
-    return message.join(' ');
+    return message.join(" ");
   }
 
   if (message) {
@@ -128,18 +125,18 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   if (error.response?.status === 401) {
-    return 'Invalid email or password.';
+    return "Invalid email or password.";
   }
 
   return fallback;
 }
 
 function isPublicAuthRequest(config: InternalAxiosRequestConfig) {
-  const url = config.url ?? '';
+  const url = config.url ?? "";
   return (
-    url.includes('/auth/login') ||
-    url.includes('/auth/register-shop') ||
-    url.includes('/auth/refresh')
+    url.includes("/auth/login") ||
+    url.includes("/auth/register-shop") ||
+    url.includes("/auth/refresh")
   );
 }
 

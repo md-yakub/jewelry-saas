@@ -1,14 +1,14 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { z } from 'zod';
-import http, { unwrap } from '../../api/http';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
-import { useAuth } from '../../hooks/useAuth';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { z } from "zod";
+import http, { unwrap } from "../../api/http";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Select } from "../../components/ui/Select";
+import { useAuth } from "../../hooks/useAuth";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -18,7 +18,7 @@ const schema = z.object({
   goldWeight: z.coerce.number().nonnegative(),
   stoneWeight: z.coerce.number().nonnegative().default(0),
   netGoldWeight: z.coerce.number().nonnegative().optional(),
-  carat: z.enum(['K18', 'K21', 'K22', 'K24']),
+  carat: z.enum(["K18", "K21", "K22", "K24"]),
   makingCharge: z.coerce.number().nonnegative().default(0),
   wastagePercentage: z.coerce.number().nonnegative().default(0),
   stonePrice: z.coerce.number().nonnegative().default(0),
@@ -45,14 +45,14 @@ export function InventoryFormPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '',
-      categoryId: '',
-      sku: '',
-      barcode: '',
+      name: "",
+      categoryId: "",
+      sku: "",
+      barcode: "",
       goldWeight: 0,
       stoneWeight: 0,
       netGoldWeight: 0,
-      carat: 'K22',
+      carat: "K22",
       makingCharge: 0,
       wastagePercentage: 0,
       stonePrice: 0,
@@ -76,7 +76,7 @@ export function InventoryFormPage() {
         const item = unwrap<any>(response);
         reset({
           ...item,
-          categoryId: item.categoryId ?? '',
+          categoryId: item.categoryId ?? "",
           goldWeight: Number(item.goldWeight),
           stoneWeight: Number(item.stoneWeight),
           netGoldWeight: Number(item.netGoldWeight),
@@ -106,40 +106,50 @@ export function InventoryFormPage() {
       await http.post(`/shops/${selectedShopId}/items`, payload);
     }
 
-    navigate('/inventory');
+    navigate("/inventory");
   };
 
   const fields = [
-    { name: 'name', label: 'Item Name', type: 'text' },
-    { name: 'sku', label: 'SKU (optional)', type: 'text' },
-    { name: 'barcode', label: 'Barcode (optional)', type: 'text' },
-    { name: 'goldWeight', label: 'Gold Weight', type: 'number' },
-    { name: 'stoneWeight', label: 'Stone Weight', type: 'number' },
-    { name: 'netGoldWeight', label: 'Net Gold Weight', type: 'number' },
-    { name: 'makingCharge', label: 'Making Charge', type: 'number' },
-    { name: 'wastagePercentage', label: 'Wastage %', type: 'number' },
-    { name: 'stonePrice', label: 'Stone Price', type: 'number' },
-    { name: 'purchaseCost', label: 'Purchase Cost', type: 'number' },
-    { name: 'sellingPriceEstimate', label: 'Selling Estimate', type: 'number' },
+    { name: "name", label: "Item Name", type: "text" },
+    { name: "sku", label: "SKU (optional)", type: "text" },
+    { name: "barcode", label: "Barcode (optional)", type: "text" },
+    { name: "goldWeight", label: "Gold Weight", type: "number" },
+    { name: "stoneWeight", label: "Stone Weight", type: "number" },
+    { name: "netGoldWeight", label: "Net Gold Weight", type: "number" },
+    { name: "makingCharge", label: "Making Charge", type: "number" },
+    { name: "wastagePercentage", label: "Wastage %", type: "number" },
+    { name: "stonePrice", label: "Stone Price", type: "number" },
+    { name: "purchaseCost", label: "Purchase Cost", type: "number" },
+    { name: "sellingPriceEstimate", label: "Selling Estimate", type: "number" },
   ] as const;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl">{isEdit ? 'Edit Jewelry Item' : 'Add Jewelry Item'}</h1>
-          <p className="text-sm text-slate-500">Keep stock details accurate for POS and reports.</p>
+          <h1 className="font-heading text-2xl">
+            {isEdit ? "Edit Jewelry Item" : "Add Jewelry Item"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            Keep stock details accurate for POS and reports.
+          </p>
         </div>
-        <Link to="/inventory" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
+        <Link
+          to="/inventory"
+          className="text-sm font-semibold text-brand-700 hover:text-brand-800"
+        >
           Back to inventory
         </Link>
       </div>
 
       <Card>
-        <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+        <form
+          className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <div>
             <label className="mb-1 block text-sm font-medium">Category</label>
-            <Select {...register('categoryId')}>
+            <Select {...register("categoryId")}>
               <option value="">No category</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -151,7 +161,7 @@ export function InventoryFormPage() {
 
           <div>
             <label className="mb-1 block text-sm font-medium">Carat</label>
-            <Select {...register('carat')}>
+            <Select {...register("carat")}>
               <option value="K18">18K</option>
               <option value="K21">21K</option>
               <option value="K22">22K</option>
@@ -161,15 +171,25 @@ export function InventoryFormPage() {
 
           {fields.map((field) => (
             <div key={field.name}>
-              <label className="mb-1 block text-sm font-medium">{field.label}</label>
+              <label className="mb-1 block text-sm font-medium">
+                {field.label}
+              </label>
               <Input step="0.001" type={field.type} {...register(field.name)} />
-              {errors[field.name] ? <p className="mt-1 text-xs text-rose-600">{errors[field.name]?.message as string}</p> : null}
+              {errors[field.name] ? (
+                <p className="mt-1 text-xs text-rose-600">
+                  {errors[field.name]?.message as string}
+                </p>
+              ) : null}
             </div>
           ))}
 
           <div className="md:col-span-2">
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEdit ? 'Update Item' : 'Create Item'}
+              {isSubmitting
+                ? "Saving..."
+                : isEdit
+                  ? "Update Item"
+                  : "Create Item"}
             </Button>
           </div>
         </form>

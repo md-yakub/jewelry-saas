@@ -15,7 +15,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed:roles": "ts-node src/prisma/seed-roles.ts",
-    "seed:dev-user": "ts-node src/prisma/seed-dev-user.ts"
+    "seed:dev-user": "ts-node src/prisma/seed-dev-user.ts",
+    "seed:super-admin": "ts-node src/prisma/seed-super-admin.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.2",
@@ -52,5 +53,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.4"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

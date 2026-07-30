@@ -17,6 +17,7 @@ import { OldGoldExchangesModule } from "./old-gold-exchanges/old-gold-exchanges.
 import { PrismaModule } from "./prisma/prisma.module";
 import { ReportsModule } from "./reports/reports.module";
 import { SalesModule } from "./sales/sales.module";
+import { SuperAdminModule } from "./super-admin/super-admin.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SalesModule } from "./sales/sales.module";
     CustomOrdersModule,
     ReportsModule,
     AuditLogsModule,
+    SuperAdminModule,
   ],
   controllers: [AppController],
   providers: [

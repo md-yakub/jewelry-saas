@@ -1,4 +1,4 @@
-export type RoleCode = 'SUPER_ADMIN' | 'SHOP_OWNER' | 'MANAGER' | 'STAFF';
+export type RoleCode = "SUPER_ADMIN" | "SHOP_OWNER" | "MANAGER" | "STAFF";
 
 export type ShopMembership = {
   shopId: string;
@@ -15,4 +15,5 @@ export type AuthUser = {
   email: string;
   phone?: string;
   isSuperAdmin: boolean;
+  isActive?: boolean;
 };

@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import http, { unwrap } from '../../api/http';
-import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { useAuth } from '../../hooks/useAuth';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import http, { unwrap } from "../../api/http";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { useAuth } from "../../hooks/useAuth";
 
 type Item = {
   id: string;
@@ -18,7 +18,7 @@ type Item = {
 
 export function InventoryPage() {
   const { selectedShopId } = useAuth();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +45,9 @@ export function InventoryPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl">Inventory</h1>
-          <p className="text-sm text-slate-500">Manage jewelry stock, categories, and statuses.</p>
+          <p className="text-sm text-slate-500">
+            Manage jewelry stock, categories, and statuses.
+          </p>
         </div>
         <Link to="/inventory/new">
           <Button>Add Jewelry Item</Button>
@@ -54,8 +56,14 @@ export function InventoryPage() {
 
       <Card>
         <div className="mb-3 flex gap-2">
-          <Input placeholder="Search by name, SKU, barcode" value={search} onChange={(event) => setSearch(event.target.value)} />
-          <Button onClick={() => void load()} disabled={loading}>{loading ? 'Loading...' : 'Search'}</Button>
+          <Input
+            placeholder="Search by name, SKU, barcode"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <Button onClick={() => void load()} disabled={loading}>
+            {loading ? "Loading..." : "Search"}
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -73,13 +81,20 @@ export function InventoryPage() {
             <tbody>
               {items.map((item) => (
                 <tr key={item.id} className="border-t border-slate-200">
-                  <td className="px-2 py-2 font-medium text-slate-900">{item.name}</td>
+                  <td className="px-2 py-2 font-medium text-slate-900">
+                    {item.name}
+                  </td>
                   <td className="px-2 py-2">{item.sku}</td>
                   <td className="px-2 py-2">{item.carat}</td>
                   <td className="px-2 py-2">{item.sellingPriceEstimate}</td>
-                  <td className="px-2 py-2"><Badge value={item.status} /></td>
                   <td className="px-2 py-2">
-                    <Link className="text-brand-700 hover:text-brand-800" to={`/inventory/${item.id}/edit`}>
+                    <Badge value={item.status} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Link
+                      className="text-brand-700 hover:text-brand-800"
+                      to={`/inventory/${item.id}/edit`}
+                    >
                       Edit
                     </Link>
                   </td>

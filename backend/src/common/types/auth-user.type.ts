@@ -4,5 +4,6 @@ export type AuthUser = {
   userId: string;
   email: string;
   isSuperAdmin: boolean;
-  role?: RoleCode;
+  shopId: string | null;
+  shopRole: RoleCode | null;
 };

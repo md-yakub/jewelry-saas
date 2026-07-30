@@ -1,17 +1,17 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import http, { unwrap } from '../../api/http';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { useAuth } from '../../hooks/useAuth';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import http, { unwrap } from "../../api/http";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { useAuth } from "../../hooks/useAuth";
 
 const schema = z.object({
   name: z.string().min(2),
   phone: z.string().min(4),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal("")),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -37,9 +37,9 @@ export function CustomersPage() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: '',
-      address: '',
-      notes: '',
+      email: "",
+      address: "",
+      notes: "",
     },
   });
 
@@ -70,18 +70,22 @@ export function CustomersPage() {
     <div className="space-y-4">
       <div>
         <h1 className="font-heading text-2xl">Customers</h1>
-        <p className="text-sm text-slate-500">Create and track customer profiles with contact history.</p>
+        <p className="text-sm text-slate-500">
+          Create and track customer profiles with contact history.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="Add Customer" className="lg:col-span-1">
           <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
-            <Input placeholder="Name" {...register('name')} />
-            <Input placeholder="Phone" {...register('phone')} />
-            <Input placeholder="Email (optional)" {...register('email')} />
-            <Input placeholder="Address" {...register('address')} />
-            <Input placeholder="Notes" {...register('notes')} />
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Add Customer'}</Button>
+            <Input placeholder="Name" {...register("name")} />
+            <Input placeholder="Phone" {...register("phone")} />
+            <Input placeholder="Email (optional)" {...register("email")} />
+            <Input placeholder="Address" {...register("address")} />
+            <Input placeholder="Notes" {...register("notes")} />
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Add Customer"}
+            </Button>
           </form>
         </Card>
 
@@ -100,7 +104,7 @@ export function CustomersPage() {
                   <tr key={customer.id} className="border-t border-slate-200">
                     <td className="px-2 py-2 font-medium">{customer.name}</td>
                     <td className="px-2 py-2">{customer.phone}</td>
-                    <td className="px-2 py-2">{customer.email ?? '-'}</td>
+                    <td className="px-2 py-2">{customer.email ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>

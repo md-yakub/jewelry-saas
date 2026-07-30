@@ -46,10 +46,21 @@ export class ShopAccessGuard implements CanActivate {
           userId: user.userId,
         },
       },
+      include: {
+        shop: {
+          select: {
+            isActive: true,
+          },
+        },
+      },
     });
 
     if (!membership) {
       throw new ForbiddenException("You do not have access to this shop");
+    }
+
+    if (!membership.shop.isActive) {
+      throw new ForbiddenException("Shop is inactive");
     }
 
     request.memberRole = membership.role;

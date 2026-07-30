@@ -5,9 +5,9 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
-import http, { setAccessToken, unwrap } from '../api/http';
-import type { AuthUser, RoleCode, ShopMembership } from '../types/auth';
+} from "react";
+import http, { setAccessToken, unwrap } from "../api/http";
+import type { AuthUser, RoleCode, ShopMembership } from "../types/auth";
 
 type LoginPayload = {
   email: string;
@@ -32,7 +32,7 @@ type AuthContextValue = {
   selectedShopId: string | null;
   selectedRole: RoleCode | null;
   isAuthenticated: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<AuthUser>;
   registerShop: (payload: RegisterShopPayload) => Promise<void>;
   logout: () => Promise<void>;
   setSelectedShopId: (shopId: string) => void;
@@ -44,15 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setLocalAccessToken] = useState<string | null>(null);
   const [memberships, setMemberships] = useState<ShopMembership[]>([]);
-  const [selectedShopId, setSelectedShopIdState] = useState<string | null>(null);
+  const [selectedShopId, setSelectedShopIdState] = useState<string | null>(
+    null,
+  );
   const [selectedRole, setSelectedRole] = useState<RoleCode | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('accessToken');
-    const storedUser = localStorage.getItem('authUser');
-    const storedMemberships = localStorage.getItem('memberships');
-    const storedShopId = localStorage.getItem('selectedShopId');
-    const storedRole = localStorage.getItem('selectedRole') as RoleCode | null;
+    const storedToken = localStorage.getItem("accessToken");
+    const storedUser = localStorage.getItem("authUser");
+    const storedMemberships = localStorage.getItem("memberships");
+    const storedShopId = localStorage.getItem("selectedShopId");
+    const storedRole = localStorage.getItem("selectedRole") as RoleCode | null;
 
     if (storedToken) {
       setLocalAccessToken(storedToken);
@@ -94,15 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSelectedRole(role);
       setAccessToken(params.accessToken);
 
-      localStorage.setItem('authUser', JSON.stringify(params.user));
-      localStorage.setItem('memberships', JSON.stringify(params.memberships));
-      localStorage.setItem('accessToken', params.accessToken);
-      localStorage.setItem('refreshToken', params.refreshToken);
+      localStorage.setItem("authUser", JSON.stringify(params.user));
+      localStorage.setItem("memberships", JSON.stringify(params.memberships));
+      localStorage.setItem("accessToken", params.accessToken);
+      localStorage.setItem("refreshToken", params.refreshToken);
+      localStorage.removeItem("selectedShopId");
+      localStorage.removeItem("selectedRole");
       if (shopId) {
-        localStorage.setItem('selectedShopId', shopId);
+        localStorage.setItem("selectedShopId", shopId);
       }
       if (role) {
-        localStorage.setItem('selectedRole', role);
+        localStorage.setItem("selectedRole", role);
       }
     },
     [],
@@ -110,34 +114,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (payload: LoginPayload) => {
-      const response = await http.post('/auth/login', payload);
+      const response = await http.post("/auth/login", payload);
       const data = unwrap<{
         user: AuthUser;
-        memberships: ShopMembership[];
+        memberships?: ShopMembership[];
         accessToken: string;
         refreshToken: string;
       }>(response);
 
-      applyAuthState(data);
+      applyAuthState({ ...data, memberships: data.memberships ?? [] });
+      return data.user;
     },
     [applyAuthState],
   );
 
   const registerShop = useCallback(
     async (payload: RegisterShopPayload) => {
-      const response = await http.post('/auth/register-shop', payload);
+      const response = await http.post("/auth/register-shop", payload);
       const data = unwrap<{
         user: AuthUser;
         accessToken: string;
         refreshToken: string;
       }>(response);
 
-      const meResponse = await http.get('/auth/me', {
+      const meResponse = await http.get("/auth/me", {
         headers: {
           Authorization: `Bearer ${data.accessToken}`,
         },
       });
-      const me = unwrap<AuthUser & { memberships: ShopMembership[] }>(meResponse);
+      const me = unwrap<AuthUser & { memberships: ShopMembership[] }>(
+        meResponse,
+      );
 
       applyAuthState({
         user: data.user,
@@ -151,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await http.post('/auth/logout');
+      await http.post("/auth/logout");
     } finally {
       setUser(null);
       setMemberships([]);
@@ -160,23 +167,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSelectedRole(null);
       setAccessToken(null);
 
-      localStorage.removeItem('authUser');
-      localStorage.removeItem('memberships');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('selectedShopId');
-      localStorage.removeItem('selectedRole');
+      localStorage.removeItem("authUser");
+      localStorage.removeItem("memberships");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("selectedShopId");
+      localStorage.removeItem("selectedRole");
     }
   }, []);
 
   const setSelectedShopId = useCallback(
     (shopId: string) => {
       setSelectedShopIdState(shopId);
-      localStorage.setItem('selectedShopId', shopId);
+      localStorage.setItem("selectedShopId", shopId);
       const membership = memberships.find((item) => item.shopId === shopId);
       if (membership) {
         setSelectedRole(membership.role);
-        localStorage.setItem('selectedRole', membership.role);
+        localStorage.setItem("selectedRole", membership.role);
       }
     },
     [memberships],
