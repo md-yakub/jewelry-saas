@@ -1,4 +1,4 @@
-import { applyDecorators } from "@nestjs/common";
+import { applyDecorators, HttpCode, HttpStatus } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation } from "@nestjs/swagger";
 import {
   ApiEnvelopeCreated,
@@ -11,11 +11,13 @@ import {
   TokenRefreshResponseDto,
   UserSummaryResponseDto,
 } from "../../common/swagger/response-models.dto";
+import { Public } from "../decorators/public.decorator";
 import { LoginDto } from "../dto/login.dto";
 import { RegisterShopDto } from "../dto/register-shop.dto";
 
 export const ApiAuthRegisterShop = () =>
   applyDecorators(
+    Public(),
     ApiOperation({
       summary: "Register shop",
       description:
@@ -45,6 +47,8 @@ export const ApiAuthRegisterShop = () =>
 
 export const ApiAuthLogin = () =>
   applyDecorators(
+    Public(),
+    HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: "Login",
       description:
@@ -68,6 +72,8 @@ export const ApiAuthLogin = () =>
 
 export const ApiAuthRefresh = () =>
   applyDecorators(
+    Public(),
+    HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: "Refresh token",
       description: "Rotates a valid refresh token and returns a new token pair.",
@@ -78,6 +84,7 @@ export const ApiAuthRefresh = () =>
 
 export const ApiAuthLogout = () =>
   applyDecorators(
+    HttpCode(HttpStatus.OK),
     ApiBearerAuth("access-token"),
     ApiOperation({
       summary: "Logout",
