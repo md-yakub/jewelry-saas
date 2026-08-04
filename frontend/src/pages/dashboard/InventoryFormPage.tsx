@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useForm, type SubmitErrorHandler } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
@@ -30,6 +30,18 @@ type FormValues = z.infer<typeof schema>;
 
 type Category = { id: string; name: string };
 
+const toNumber = (value: unknown) => {
+  if (value === "" || value === null || value === undefined) {
+    return 0;
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+};
+
+const calculateNetGoldWeight = (goldWeight: unknown, stoneWeight: unknown) =>
+  Math.max(toNumber(goldWeight) - toNumber(stoneWeight), 0);
+
 export function InventoryFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,6 +56,8 @@ export function InventoryFormPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -63,6 +77,16 @@ export function InventoryFormPage() {
       sellingPriceEstimate: 0,
     },
   });
+
+  const goldWeight = watch("goldWeight");
+  const stoneWeight = watch("stoneWeight");
+
+  useEffect(() => {
+    setValue("netGoldWeight", calculateNetGoldWeight(goldWeight, stoneWeight), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [goldWeight, setValue, stoneWeight]);
 
   useEffect(() => {
     if (!selectedShopId) return;
@@ -113,6 +137,10 @@ export function InventoryFormPage() {
       categoryId: values.categoryId || undefined,
       sku: values.sku || undefined,
       barcode: values.barcode || undefined,
+      netGoldWeight: calculateNetGoldWeight(
+        values.goldWeight,
+        values.stoneWeight,
+      ),
     };
 
     try {
@@ -147,7 +175,6 @@ export function InventoryFormPage() {
     { name: "barcode", label: "Barcode (optional)", type: "text" },
     { name: "goldWeight", label: "Gold Weight", type: "number" },
     { name: "stoneWeight", label: "Stone Weight", type: "number" },
-    { name: "netGoldWeight", label: "Net Gold Weight", type: "number" },
     { name: "makingCharge", label: "Making Charge", type: "number" },
     { name: "wastagePercentage", label: "Wastage %", type: "number" },
     { name: "stonePrice", label: "Stone Price", type: "number" },
@@ -240,17 +267,43 @@ export function InventoryFormPage() {
           </div>
 
           {fields.map((field) => (
-            <div key={field.name}>
-              <label className="mb-1 block text-sm font-medium">
-                {field.label}
-              </label>
-              <Input step="0.001" type={field.type} {...register(field.name)} />
-              {errors[field.name] ? (
-                <p className="mt-1 text-xs text-rose-600">
-                  {errors[field.name]?.message as string}
-                </p>
+            <Fragment key={field.name}>
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  {field.label}
+                </label>
+                <Input
+                  step="0.001"
+                  type={field.type}
+                  {...register(field.name)}
+                />
+                {errors[field.name] ? (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {errors[field.name]?.message as string}
+                  </p>
+                ) : null}
+              </div>
+
+              {field.name === "stoneWeight" ? (
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Net Gold Weight
+                  </label>
+                  <Input
+                    readOnly
+                    step="0.001"
+                    type="number"
+                    className="bg-slate-50 text-slate-700"
+                    {...register("netGoldWeight")}
+                  />
+                  {errors.netGoldWeight ? (
+                    <p className="mt-1 text-xs text-rose-600">
+                      {errors.netGoldWeight.message}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
-            </div>
+            </Fragment>
           ))}
 
           <div className="md:col-span-2">
