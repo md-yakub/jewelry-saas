@@ -49,9 +49,16 @@ export function InventoryPage() {
             Manage jewelry stock, categories, and statuses.
           </p>
         </div>
-        <Link to="/inventory/new">
-          <Button>Add Jewelry Item</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/inventory/categories">
+            <Button className="bg-slate-800 hover:bg-slate-700">
+              Manage Categories
+            </Button>
+          </Link>
+          <Link to="/inventory/new">
+            <Button>Add Jewelry Item</Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

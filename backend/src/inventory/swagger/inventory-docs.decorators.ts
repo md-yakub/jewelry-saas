@@ -30,6 +30,13 @@ const itemParam = () =>
     example: examples.itemId,
   });
 
+const categoryParam = () =>
+  ApiParam({
+    name: "categoryId",
+    description: "Inventory category identifier.",
+    example: "cat_01J1Z8X4Y5Q6R7S8T9V0W1X2Y3",
+  });
+
 export const ApiInventoryCreateItem = () =>
   applyDecorators(
     ApiOperation({
@@ -186,4 +193,34 @@ export const ApiInventoryListCategories = () =>
     shopParam(),
     ApiEnvelopeArrayOk(CategoryResponseDto),
     ApiStandardErrors({ forbidden: true, internal: true }),
+  );
+
+export const ApiInventoryUpdateCategory = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Update inventory category",
+      description: "Updates a category name or description within the selected shop.",
+    }),
+    shopParam(),
+    categoryParam(),
+    ApiEnvelopeOk(CategoryResponseDto),
+    ApiStandardErrors({
+      forbidden: true,
+      notFound: true,
+      conflict: true,
+      internal: true,
+    }),
+  );
+
+export const ApiInventoryDeleteCategory = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Delete inventory category",
+      description:
+        "Deletes a category within the selected shop and leaves existing jewelry items uncategorized.",
+    }),
+    shopParam(),
+    categoryParam(),
+    ApiEnvelopeOk(MessageResponseDto, { message: "Category deleted successfully" }),
+    ApiStandardErrors({ forbidden: true, notFound: true, internal: true }),
   );

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
-import http, { unwrap } from "../../api/http";
+import http, { getApiErrorMessage, unwrap } from "../../api/http";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -35,6 +35,7 @@ export function InventoryFormPage() {
   const navigate = useNavigate();
   const { selectedShopId } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryError, setCategoryError] = useState("");
   const isEdit = Boolean(id);
 
   const {
@@ -68,8 +69,14 @@ export function InventoryFormPage() {
       .get(`/shops/${selectedShopId}/categories`)
       .then((response) => {
         setCategories(unwrap<Category[]>(response));
+        setCategoryError("");
       })
-      .catch(() => setCategories([]));
+      .catch((error) => {
+        setCategories([]);
+        setCategoryError(
+          getApiErrorMessage(error, "Unable to load categories."),
+        );
+      });
 
     if (id) {
       http.get(`/shops/${selectedShopId}/items/${id}`).then((response) => {
@@ -148,15 +155,32 @@ export function InventoryFormPage() {
           onSubmit={handleSubmit(onSubmit)}
         >
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <label className="block text-sm font-medium">Category</label>
+              <Link
+                to="/inventory/categories"
+                className="text-xs font-semibold text-brand-700 hover:text-brand-800"
+              >
+                Add category
+              </Link>
+            </div>
             <Select {...register("categoryId")}>
-              <option value="">No category</option>
+              <option value="">
+                {categories.length === 0 ? "No categories yet" : "No category"}
+              </option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
             </Select>
+            {categoryError ? (
+              <p className="mt-1 text-xs text-rose-600">{categoryError}</p>
+            ) : categories.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Create categories to organize inventory items.
+              </p>
+            ) : null}
           </div>
 
           <div>

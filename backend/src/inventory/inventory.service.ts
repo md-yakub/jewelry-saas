@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -9,6 +10,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { CreateJewelryItemDto } from "./dto/create-item.dto";
 import { QueryItemsDto } from "./dto/query-items.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { UpdateJewelryItemDto } from "./dto/update-item.dto";
 
 @Injectable()
@@ -207,13 +209,20 @@ export class InventoryService {
   }
 
   async createCategory(shopId: string, dto: CreateCategoryDto) {
-    return this.prisma.jewelryCategory.create({
-      data: {
-        shopId,
-        name: dto.name,
-        description: dto.description,
-      },
-    });
+    const name = this.normalizeCategoryName(dto.name);
+    await this.ensureCategoryNameIsUnique(shopId, name);
+
+    try {
+      return await this.prisma.jewelryCategory.create({
+        data: {
+          shopId,
+          name,
+          description: dto.description,
+        },
+      });
+    } catch (error) {
+      return this.handleCategoryUniqueError(error);
+    }
   }
 
   async listCategories(shopId: string) {
@@ -223,7 +232,61 @@ export class InventoryService {
     });
   }
 
+  async updateCategory(
+    shopId: string,
+    categoryId: string,
+    dto: UpdateCategoryDto,
+  ) {
+    const existing = await this.findCategoryInShop(shopId, categoryId);
+    const name =
+      dto.name !== undefined ? this.normalizeCategoryName(dto.name) : undefined;
+
+    if (name !== undefined) {
+      await this.ensureCategoryNameIsUnique(shopId, name, existing.id);
+    }
+
+    try {
+      return await this.prisma.jewelryCategory.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          description: dto.description,
+        },
+      });
+    } catch (error) {
+      return this.handleCategoryUniqueError(error);
+    }
+  }
+
+  async removeCategory(shopId: string, categoryId: string) {
+    const existing = await this.findCategoryInShop(shopId, categoryId);
+    const itemCount = await this.prisma.jewelryItem.count({
+      where: { shopId, categoryId: existing.id },
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.jewelryItem.updateMany({
+        where: { shopId, categoryId: existing.id },
+        data: { categoryId: null },
+      }),
+      this.prisma.jewelryCategory.delete({
+        where: { id: existing.id },
+      }),
+    ]);
+
+    return {
+      message:
+        itemCount > 0
+          ? "Category deleted and existing items were moved to no category"
+          : "Category deleted successfully",
+    };
+  }
+
   private async ensureCategoryInShop(shopId: string, categoryId: string) {
+    await this.findCategoryInShop(shopId, categoryId);
+  }
+
+  private async findCategoryInShop(shopId: string, categoryId: string) {
     const category = await this.prisma.jewelryCategory.findFirst({
       where: { id: categoryId, shopId },
     });
@@ -231,6 +294,46 @@ export class InventoryService {
     if (!category) {
       throw new NotFoundException("Category not found in shop");
     }
+
+    return category;
+  }
+
+  private normalizeCategoryName(name: string) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new BadRequestException("Category name is required");
+    }
+
+    return trimmedName;
+  }
+
+  private async ensureCategoryNameIsUnique(
+    shopId: string,
+    name: string,
+    excludeCategoryId?: string,
+  ) {
+    const existing = await this.prisma.jewelryCategory.findFirst({
+      where: {
+        shopId,
+        name: { equals: name, mode: "insensitive" },
+        ...(excludeCategoryId ? { id: { not: excludeCategoryId } } : {}),
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException("Category name already exists in this shop");
+    }
+  }
+
+  private handleCategoryUniqueError(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new ConflictException("Category name already exists in this shop");
+    }
+
+    throw error;
   }
 
   private generateCode(prefix: "SKU" | "BAR"): string {

@@ -16,14 +16,17 @@ import { AuthUser } from "../common/types/auth-user.type";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { CreateJewelryItemDto } from "./dto/create-item.dto";
 import { QueryItemsDto } from "./dto/query-items.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { UpdateJewelryItemDto } from "./dto/update-item.dto";
 import { InventoryService } from "./inventory.service";
 import {
   ApiInventoryCreateCategory,
   ApiInventoryCreateItem,
+  ApiInventoryDeleteCategory,
   ApiInventoryGetItem,
   ApiInventoryListCategories,
   ApiInventoryListItems,
+  ApiInventoryUpdateCategory,
   ApiInventoryRemoveItem,
   ApiInventoryUpdateItem,
 } from "./swagger/inventory-docs.decorators";
@@ -94,5 +97,26 @@ export class InventoryController {
   @ApiInventoryListCategories()
   listCategories(@Param("shopId") shopId: string) {
     return this.inventoryService.listCategories(shopId);
+  }
+
+  @Roles(RoleCode.SHOP_OWNER, RoleCode.MANAGER, RoleCode.SUPER_ADMIN)
+  @Patch("categories/:categoryId")
+  @ApiInventoryUpdateCategory()
+  updateCategory(
+    @Param("shopId") shopId: string,
+    @Param("categoryId") categoryId: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.inventoryService.updateCategory(shopId, categoryId, dto);
+  }
+
+  @Roles(RoleCode.SHOP_OWNER, RoleCode.MANAGER, RoleCode.SUPER_ADMIN)
+  @Delete("categories/:categoryId")
+  @ApiInventoryDeleteCategory()
+  removeCategory(
+    @Param("shopId") shopId: string,
+    @Param("categoryId") categoryId: string,
+  ) {
+    return this.inventoryService.removeCategory(shopId, categoryId);
   }
 }

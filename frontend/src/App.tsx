@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { SuperAdminLayout } from "./components/layout/SuperAdminLayout";
 import { SuperAdminRoute } from "./components/layout/SuperAdminRoute";
 import { CalculatorPage } from "./pages/dashboard/CalculatorPage";
+import { CategoriesPage } from "./pages/dashboard/CategoriesPage";
 import { CustomersPage } from "./pages/dashboard/CustomersPage";
 import { CustomOrdersPage } from "./pages/dashboard/CustomOrdersPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "/dashboard", element: <DashboardPage /> },
           { path: "/inventory", element: <InventoryPage /> },
+          { path: "/inventory/categories", element: <CategoriesPage /> },
           { path: "/inventory/new", element: <InventoryFormPage /> },
           { path: "/inventory/:id/edit", element: <InventoryFormPage /> },
           { path: "/gold-rates", element: <GoldRatesPage /> },

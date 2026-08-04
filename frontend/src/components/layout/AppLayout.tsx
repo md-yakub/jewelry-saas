@@ -21,6 +21,11 @@ const menu: MenuItem[] = [
     roles: ["SHOP_OWNER", "MANAGER", "SUPER_ADMIN"],
   },
   {
+    label: "Categories",
+    to: "/inventory/categories",
+    roles: ["SHOP_OWNER", "MANAGER", "SUPER_ADMIN"],
+  },
+  {
     label: "Sales / POS",
     to: "/sales",
     roles: ["SHOP_OWNER", "MANAGER", "STAFF", "SUPER_ADMIN"],
