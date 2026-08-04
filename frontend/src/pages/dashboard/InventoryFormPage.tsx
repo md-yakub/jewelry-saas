@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitErrorHandler } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 import http, { getApiErrorMessage, unwrap } from "../../api/http";
@@ -36,6 +36,8 @@ export function InventoryFormPage() {
   const { selectedShopId } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryError, setCategoryError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const isEdit = Boolean(id);
 
   const {
@@ -98,7 +100,13 @@ export function InventoryFormPage() {
   }, [id, reset, selectedShopId]);
 
   const onSubmit = async (values: FormValues) => {
-    if (!selectedShopId) return;
+    setSubmitError("");
+    setSuccessMessage("");
+
+    if (!selectedShopId) {
+      setSubmitError("Select a shop before saving an inventory item.");
+      return;
+    }
 
     const payload = {
       ...values,
@@ -107,13 +115,30 @@ export function InventoryFormPage() {
       barcode: values.barcode || undefined,
     };
 
-    if (isEdit) {
-      await http.patch(`/shops/${selectedShopId}/items/${id}`, payload);
-    } else {
-      await http.post(`/shops/${selectedShopId}/items`, payload);
-    }
+    try {
+      if (isEdit) {
+        await http.patch(`/shops/${selectedShopId}/items/${id}`, payload);
+        setSuccessMessage("Jewelry item updated successfully.");
+      } else {
+        await http.post(`/shops/${selectedShopId}/items`, payload);
+        setSuccessMessage("Jewelry item created successfully.");
+      }
 
-    navigate("/inventory");
+      navigate("/inventory", {
+        state: {
+          message: isEdit
+            ? "Jewelry item updated successfully."
+            : "Jewelry item created successfully.",
+        },
+      });
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error, "Unable to save item."));
+    }
+  };
+
+  const onInvalid: SubmitErrorHandler<FormValues> = () => {
+    setSuccessMessage("");
+    setSubmitError("Fix the highlighted fields before saving this item.");
   };
 
   const fields = [
@@ -149,10 +174,21 @@ export function InventoryFormPage() {
         </Link>
       </div>
 
+      {successMessage ? (
+        <div className="rounded-panel border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          {successMessage}
+        </div>
+      ) : null}
+      {submitError ? (
+        <div className="rounded-panel border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          {submitError}
+        </div>
+      ) : null}
+
       <Card>
         <form
           className="grid grid-cols-1 gap-4 md:grid-cols-2"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(onSubmit, onInvalid)}
         >
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -174,6 +210,11 @@ export function InventoryFormPage() {
                 </option>
               ))}
             </Select>
+            {errors.categoryId ? (
+              <p className="mt-1 text-xs text-rose-600">
+                {errors.categoryId.message}
+              </p>
+            ) : null}
             {categoryError ? (
               <p className="mt-1 text-xs text-rose-600">{categoryError}</p>
             ) : categories.length === 0 ? (
@@ -191,6 +232,11 @@ export function InventoryFormPage() {
               <option value="K22">22K</option>
               <option value="K24">24K</option>
             </Select>
+            {errors.carat ? (
+              <p className="mt-1 text-xs text-rose-600">
+                {errors.carat.message}
+              </p>
+            ) : null}
           </div>
 
           {fields.map((field) => (

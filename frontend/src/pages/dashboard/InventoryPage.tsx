@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import http, { unwrap } from "../../api/http";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -18,9 +18,19 @@ type Item = {
 
 export function InventoryPage() {
   const { selectedShopId } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navigationMessage =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "message" in location.state &&
+    typeof location.state.message === "string"
+      ? location.state.message
+      : "";
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [message] = useState(navigationMessage);
 
   const load = async () => {
     if (!selectedShopId) return;
@@ -39,6 +49,11 @@ export function InventoryPage() {
   useEffect(() => {
     void load();
   }, [selectedShopId]);
+
+  useEffect(() => {
+    if (!navigationMessage) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, navigationMessage, navigate]);
 
   return (
     <div className="space-y-4">
@@ -60,6 +75,12 @@ export function InventoryPage() {
           </Link>
         </div>
       </div>
+
+      {message ? (
+        <div className="rounded-panel border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          {message}
+        </div>
+      ) : null}
 
       <Card>
         <div className="mb-3 flex gap-2">
