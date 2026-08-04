@@ -39,8 +39,6 @@
 - Review every changed file.
 - Verify that the implementation is consistent.
 - Fix mistakes introduced by your changes.
-- Do not ask me to run commands.
-- Do not suggest commands unless I explicitly ask.
 - If something cannot be verified without running the application, state that clearly instead of guessing.
 
 ## Response format
