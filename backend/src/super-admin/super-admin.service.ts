@@ -101,6 +101,8 @@ export class SuperAdminService {
           slug: true,
           email: true,
           phone: true,
+          currencyCode: true,
+          locale: true,
           isActive: true,
           createdAt: true,
           members: {
@@ -160,6 +162,8 @@ export class SuperAdminService {
         slug: true,
         email: true,
         phone: true,
+        currencyCode: true,
+        locale: true,
         isActive: true,
         createdAt: true,
         members: {

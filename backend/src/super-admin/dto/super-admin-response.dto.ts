@@ -103,6 +103,12 @@ export class SuperAdminShopDto {
   })
   phone?: string;
 
+  @ApiProperty({ description: "Shop currency code.", example: "USD" })
+  currencyCode!: string;
+
+  @ApiProperty({ description: "Shop locale.", example: "en-US" })
+  locale!: string;
+
   @ApiProperty({ description: "Whether shop is active.", example: true })
   isActive!: boolean;
 

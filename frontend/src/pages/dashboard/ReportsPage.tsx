@@ -4,9 +4,10 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../hooks/useAuth";
+import { formatCurrency } from "../../lib/utils";
 
 export function ReportsPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [from, setFrom] = useState(new Date().toISOString().slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
@@ -65,9 +66,23 @@ export function ReportsPage() {
             </div>
             <Button onClick={() => void loadDaily()}>Run</Button>
           </div>
-          <pre className="mt-3 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-emerald-200">
-            {daily ? JSON.stringify(daily, null, 2) : "No result yet."}
-          </pre>
+          {daily ? (
+            <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+              <p>Total sales: {formatCurrency(daily.totalSales, selectedShop)}</p>
+              <p>Cash: {formatCurrency(daily.cashTotal, selectedShop)}</p>
+              <p>Card: {formatCurrency(daily.cardTotal, selectedShop)}</p>
+              <p>Bank: {formatCurrency(daily.bankTotal, selectedShop)}</p>
+              <p>
+                Old gold:{" "}
+                {formatCurrency(daily.oldGoldExchangeTotal, selectedShop)}
+              </p>
+              <p>Profit: {formatCurrency(daily.profitEstimate, selectedShop)}</p>
+              <p>Invoices: {daily.totalInvoices}</p>
+              <p>Gold sold: {daily.totalGoldWeightSold} g</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">No result yet.</p>
+          )}
         </Card>
 
         <Card title="Range Reports">
@@ -84,22 +99,54 @@ export function ReportsPage() {
             />
             <Button onClick={() => void loadSummary()}>Run</Button>
           </div>
-          <div className="mt-3 grid grid-cols-1 gap-3">
-            <pre className="overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-amber-200">
-              {summary
-                ? JSON.stringify(summary, null, 2)
-                : "Sales summary pending."}
-            </pre>
-            <pre className="overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-sky-200">
-              {inventoryValue
-                ? JSON.stringify(inventoryValue, null, 2)
-                : "Inventory value pending."}
-            </pre>
-            <pre className="overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-fuchsia-200">
-              {goldSold
-                ? JSON.stringify(goldSold, null, 2)
-                : "Gold sold report pending."}
-            </pre>
+          <div className="mt-3 grid grid-cols-1 gap-3 text-sm">
+            {summary ? (
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="font-semibold text-slate-900">Sales Summary</p>
+                <p>
+                  Sales: {formatCurrency(summary.totalSalesAmount, selectedShop)}
+                </p>
+                <p>Discounts: {formatCurrency(summary.totalDiscount, selectedShop)}</p>
+                <p>Tax: {formatCurrency(summary.totalTax, selectedShop)}</p>
+                <p>Invoices: {summary.totalInvoices}</p>
+              </div>
+            ) : (
+              <p className="text-slate-500">Sales summary pending.</p>
+            )}
+            {inventoryValue ? (
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="font-semibold text-slate-900">Inventory Value</p>
+                <p>
+                  Purchase cost:{" "}
+                  {formatCurrency(inventoryValue.purchaseCostValue, selectedShop)}
+                </p>
+                <p>
+                  Selling estimate:{" "}
+                  {formatCurrency(
+                    inventoryValue.sellingEstimateValue,
+                    selectedShop,
+                  )}
+                </p>
+                <p>
+                  Gross margin:{" "}
+                  {formatCurrency(
+                    inventoryValue.estimatedGrossMargin,
+                    selectedShop,
+                  )}
+                </p>
+                <p>Stock count: {inventoryValue.stockCount}</p>
+              </div>
+            ) : (
+              <p className="text-slate-500">Inventory value pending.</p>
+            )}
+            {goldSold ? (
+              <div className="rounded-lg bg-slate-50 p-3">
+                <p className="font-semibold text-slate-900">Gold Sold</p>
+                <p>{goldSold.totalGoldSoldWeight} g</p>
+              </div>
+            ) : (
+              <p className="text-slate-500">Gold sold report pending.</p>
+            )}
           </div>
         </Card>
       </div>

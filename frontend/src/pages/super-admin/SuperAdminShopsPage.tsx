@@ -10,6 +10,8 @@ type SuperAdminShop = {
   id: string;
   name: string;
   slug: string;
+  currencyCode: string;
+  locale: string;
   isActive: boolean;
   createdAt: string;
   owner?: {
@@ -71,6 +73,7 @@ export function SuperAdminShopsPage() {
               <tr>
                 <th className="px-2 py-2">Shop</th>
                 <th className="px-2 py-2">Owner</th>
+                <th className="px-2 py-2">Currency</th>
                 <th className="px-2 py-2">Active</th>
                 <th className="px-2 py-2">Created</th>
                 <th className="px-2 py-2">Action</th>
@@ -94,6 +97,12 @@ export function SuperAdminShopsPage() {
                     ) : (
                       "-"
                     )}
+                  </td>
+                  <td className="px-2 py-2">
+                    <p>{shop.currencyCode ?? "USD"}</p>
+                    <p className="text-xs text-slate-500">
+                      {shop.locale ?? "en-US"}
+                    </p>
                   </td>
                   <td className="px-2 py-2">
                     <Badge value={shop.isActive ? "ACTIVE" : "INACTIVE"} />

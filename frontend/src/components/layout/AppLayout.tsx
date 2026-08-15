@@ -55,6 +55,11 @@ const menu: MenuItem[] = [
     to: "/reports",
     roles: ["SHOP_OWNER", "MANAGER", "SUPER_ADMIN"],
   },
+  {
+    label: "Settings",
+    to: "/settings",
+    roles: ["SHOP_OWNER", "MANAGER", "STAFF", "SUPER_ADMIN"],
+  },
 ];
 
 export function AppLayout() {

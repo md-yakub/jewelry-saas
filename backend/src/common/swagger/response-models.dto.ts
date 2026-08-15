@@ -63,6 +63,18 @@ export class ShopResponseDto {
     example: "12 MG Road, Bengaluru, Karnataka",
   })
   address?: string;
+
+  @ApiProperty({
+    description: "ISO 4217 currency code used by the shop.",
+    example: "USD",
+  })
+  currencyCode!: string;
+
+  @ApiProperty({
+    description: "Locale used for currency formatting.",
+    example: "en-US",
+  })
+  locale!: string;
 }
 
 export class UserSummaryResponseDto {
@@ -396,6 +408,9 @@ export class InvoiceResponseDto {
   })
   invoiceNumber!: string;
 
+  @ApiProperty({ description: "Sale currency snapshot.", example: "USD" })
+  currencyCode!: string;
+
   @ApiProperty({
     description: "Rendered invoice HTML.",
     example: "<html><body><h2>Invoice INV-20260719-00001</h2></body></html>",
@@ -437,6 +452,9 @@ export class SaleResponseDto {
 
   @ApiProperty({ description: "Old gold deduction applied.", example: 0 })
   oldGoldDeduction!: number;
+
+  @ApiProperty({ description: "Sale currency snapshot.", example: "USD" })
+  currencyCode!: string;
 
   @ApiProperty({ description: "Final payable amount.", example: 61145.5 })
   totalAmount!: number;

@@ -18,6 +18,7 @@ import { InventoryFormPage } from "./pages/dashboard/InventoryFormPage";
 import { InventoryPage } from "./pages/dashboard/InventoryPage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { SalesPage } from "./pages/dashboard/SalesPage";
+import { ShopSettingsPage } from "./pages/dashboard/ShopSettingsPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterShopPage } from "./pages/auth/RegisterShopPage";
 import { SuperAdminOverviewPage } from "./pages/super-admin/SuperAdminOverviewPage";
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
           { path: "/calculator", element: <CalculatorPage /> },
           { path: "/custom-orders", element: <CustomOrdersPage /> },
           { path: "/reports", element: <ReportsPage /> },
+          { path: "/settings", element: <ShopSettingsPage /> },
         ],
       },
     ],

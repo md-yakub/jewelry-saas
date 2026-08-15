@@ -65,6 +65,8 @@ export class AuthService {
             select: {
               name: true,
               slug: true,
+              currencyCode: true,
+              locale: true,
             },
           },
         },
@@ -217,6 +219,8 @@ export class AuthService {
           select: {
             name: true,
             slug: true,
+            currencyCode: true,
+            locale: true,
           },
         },
       },

@@ -18,6 +18,15 @@ export class SalesService {
   ) {}
 
   async create(shopId: string, dto: CreateSaleDto, user: AuthUser) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: { currencyCode: true, locale: true },
+    });
+
+    if (!shop) {
+      throw new NotFoundException("Shop not found");
+    }
+
     if (
       dto.paymentMethod === PaymentMethod.MIXED &&
       (!dto.payments || dto.payments.length === 0)
@@ -123,6 +132,7 @@ export class SalesService {
           discountAmount: new Prisma.Decimal(discountAmount),
           totalAmount: new Prisma.Decimal(totalAmount),
           oldGoldDeduction: new Prisma.Decimal(oldGoldDeduction),
+          currencyCode: shop.currencyCode,
           items: {
             create: lineItems.map((line) => ({
               itemId: line.item.id,
@@ -184,6 +194,8 @@ export class SalesService {
       const htmlContent = this.generateInvoiceHtml({
         invoiceNumber,
         shopId,
+        currencyCode: shop.currencyCode,
+        locale: shop.locale,
         sale,
       });
 
@@ -192,6 +204,7 @@ export class SalesService {
           shopId,
           saleId: sale.id,
           invoiceNumber,
+          currencyCode: shop.currencyCode,
           htmlContent,
         },
       });
@@ -385,6 +398,8 @@ export class SalesService {
   private generateInvoiceHtml(params: {
     invoiceNumber: string;
     shopId: string;
+    currencyCode: string;
+    locale: string;
     sale: {
       id: string;
       createdAt: Date;
@@ -401,13 +416,20 @@ export class SalesService {
       customer: { name: string } | null;
     };
   }) {
+    const formatCurrency = (value: Prisma.Decimal) =>
+      new Intl.NumberFormat(params.locale || "en-US", {
+        style: "currency",
+        currency: params.currencyCode || "USD",
+        minimumFractionDigits: 2,
+      }).format(Number(value));
+
     const itemRows = params.sale.items
       .map(
         (item) => `
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.itemNameSnapshot}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${item.skuSnapshot}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${Number(item.price).toFixed(2)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatCurrency(item.price)}</td>
           </tr>
         `,
       )
@@ -432,11 +454,11 @@ export class SalesService {
             <tbody>${itemRows}</tbody>
           </table>
           <div style="margin-top: 16px; max-width: 320px; margin-left: auto;">
-            <p><strong>Subtotal:</strong> ${Number(params.sale.subtotal).toFixed(2)}</p>
-            <p><strong>Old Gold Deduction:</strong> ${Number(params.sale.oldGoldDeduction).toFixed(2)}</p>
-            <p><strong>Tax:</strong> ${Number(params.sale.taxAmount).toFixed(2)}</p>
-            <p><strong>Discount:</strong> ${Number(params.sale.discountAmount).toFixed(2)}</p>
-            <p style="font-size: 18px;"><strong>Total:</strong> ${Number(params.sale.totalAmount).toFixed(2)}</p>
+            <p><strong>Subtotal:</strong> ${formatCurrency(params.sale.subtotal)}</p>
+            <p><strong>Old Gold Deduction:</strong> ${formatCurrency(params.sale.oldGoldDeduction)}</p>
+            <p><strong>Tax:</strong> ${formatCurrency(params.sale.taxAmount)}</p>
+            <p><strong>Discount:</strong> ${formatCurrency(params.sale.discountAmount)}</p>
+            <p style="font-size: 18px;"><strong>Total:</strong> ${formatCurrency(params.sale.totalAmount)}</p>
           </div>
         </body>
       </html>

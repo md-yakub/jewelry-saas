@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { formatCurrency } from "../../lib/utils";
 
 export function DashboardPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [daily, setDaily] = useState<any | null>(null);
   const [inventory, setInventory] = useState<any | null>(null);
 
@@ -42,7 +42,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card title="Today Sales">
           <p className="text-2xl font-bold text-slate-900">
-            {daily ? formatCurrency(daily.totalSales) : "--"}
+            {daily ? formatCurrency(daily.totalSales, selectedShop) : "--"}
           </p>
         </Card>
         <Card title="Invoices Today">
@@ -52,7 +52,9 @@ export function DashboardPage() {
         </Card>
         <Card title="Stock Value">
           <p className="text-2xl font-bold text-slate-900">
-            {inventory ? formatCurrency(inventory.sellingEstimateValue) : "--"}
+            {inventory
+              ? formatCurrency(inventory.sellingEstimateValue, selectedShop)
+              : "--"}
           </p>
         </Card>
         <Card title="Gold Sold Today">

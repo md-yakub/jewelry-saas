@@ -8,6 +8,7 @@ import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { useAuth } from "../../hooks/useAuth";
+import { formatCurrency } from "../../lib/utils";
 
 const schema = z.object({
   goldWeight: z.coerce.number().nonnegative(),
@@ -22,7 +23,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function CalculatorPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [result, setResult] = useState<any | null>(null);
 
   const {
@@ -112,11 +113,29 @@ export function CalculatorPage() {
         </Card>
 
         <Card title="Breakdown">
-          <pre className="overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-amber-200">
-            {result
-              ? JSON.stringify(result, null, 2)
-              : "Run a calculation to view full breakdown."}
-          </pre>
+          {result ? (
+            <div className="space-y-2 text-sm">
+              {Object.entries(result.breakdown as Record<string, number>).map(
+                ([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between border-b border-slate-100 py-1"
+                  >
+                    <span className="capitalize text-slate-600">
+                      {key.replace(/([A-Z])/g, " $1")}
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {formatCurrency(value, selectedShop)}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">
+              Run a calculation to view full breakdown.
+            </p>
+          )}
         </Card>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { useAuth } from "../../hooks/useAuth";
+import { formatCurrency } from "../../lib/utils";
 
 const schema = z.object({
   customerId: z.string().min(1),
@@ -25,7 +26,7 @@ type Customer = { id: string; name: string; phone: string };
 type Craftsman = { id: string; name: string };
 
 export function CustomOrdersPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [craftsmen, setCraftsmen] = useState<Craftsman[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -145,6 +146,9 @@ export function CustomOrdersPage() {
                   <Badge value={order.status} />
                 </div>
                 <p className="mt-1 text-slate-600">{order.designNotes}</p>
+                <p className="mt-1 text-slate-600">
+                  Advance: {formatCurrency(order.advancePayment, selectedShop)}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {[
                     "PENDING",

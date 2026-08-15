@@ -31,11 +31,18 @@ type AuthContextValue = {
   memberships: ShopMembership[];
   selectedShopId: string | null;
   selectedRole: RoleCode | null;
+  selectedShop:
+    | (ShopMembership["shop"] & { id: string; currencyCode: string; locale: string })
+    | null;
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
   registerShop: (payload: RegisterShopPayload) => Promise<void>;
   logout: () => Promise<void>;
   setSelectedShopId: (shopId: string) => void;
+  updateSelectedShopSettings: (settings: {
+    currencyCode: string;
+    locale: string;
+  }) => void;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -189,6 +196,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [memberships],
   );
 
+  const updateSelectedShopSettings = useCallback(
+    (settings: { currencyCode: string; locale: string }) => {
+      if (!selectedShopId) return;
+
+      setMemberships((currentMemberships) => {
+        const updatedMemberships = currentMemberships.map((membership) =>
+          membership.shopId === selectedShopId
+            ? {
+                ...membership,
+                shop: {
+                  ...membership.shop,
+                  currencyCode: settings.currencyCode,
+                  locale: settings.locale,
+                },
+              }
+            : membership,
+        );
+
+        localStorage.setItem("memberships", JSON.stringify(updatedMemberships));
+        return updatedMemberships;
+      });
+    },
+    [selectedShopId],
+  );
+
+  const selectedMembership =
+    memberships.find((membership) => membership.shopId === selectedShopId) ??
+    null;
+  const selectedShop = selectedMembership
+    ? {
+        id: selectedMembership.shopId,
+        ...selectedMembership.shop,
+        currencyCode: selectedMembership.shop.currencyCode ?? "USD",
+        locale: selectedMembership.shop.locale ?? "en-US",
+      }
+    : null;
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -196,11 +240,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memberships,
       selectedShopId,
       selectedRole,
+      selectedShop,
       isAuthenticated: Boolean(user && accessToken),
       login,
       registerShop,
       logout,
       setSelectedShopId,
+      updateSelectedShopSettings,
     }),
     [
       accessToken,
@@ -210,7 +256,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerShop,
       selectedRole,
       selectedShopId,
+      selectedShop,
       setSelectedShopId,
+      updateSelectedShopSettings,
       user,
     ],
   );

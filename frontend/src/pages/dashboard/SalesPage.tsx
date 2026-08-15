@@ -19,7 +19,7 @@ type Item = {
 };
 
 export function SalesPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [sales, setSales] = useState<any[]>([]);
@@ -127,7 +127,7 @@ export function SalesPage() {
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="font-semibold">
-                          {formatCurrency(Number(item.sellingPriceEstimate))}
+                          {formatCurrency(item.sellingPriceEstimate, selectedShop)}
                         </span>
                         <input
                           type="checkbox"
@@ -182,8 +182,8 @@ export function SalesPage() {
             </div>
 
             <div className="rounded-lg bg-slate-100 p-3 text-sm">
-              <p>Subtotal: {formatCurrency(subtotal)}</p>
-              <p>Total: {formatCurrency(total)}</p>
+              <p>Subtotal: {formatCurrency(subtotal, selectedShop)}</p>
+              <p>Total: {formatCurrency(total, selectedShop)}</p>
             </div>
 
             {message ? (
@@ -203,7 +203,13 @@ export function SalesPage() {
                 <p className="font-semibold">
                   {sale.invoice?.invoiceNumber ?? sale.id}
                 </p>
-                <p>Total: {formatCurrency(Number(sale.totalAmount))}</p>
+                <p>
+                  Total:{" "}
+                  {formatCurrency(sale.totalAmount, {
+                    currencyCode: sale.currencyCode ?? selectedShop?.currencyCode,
+                    locale: selectedShop?.locale,
+                  })}
+                </p>
                 <div className="mt-1">
                   <Badge value={sale.status} />
                 </div>

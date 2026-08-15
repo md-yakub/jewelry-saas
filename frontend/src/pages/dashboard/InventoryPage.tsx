@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../hooks/useAuth";
+import { formatCurrency } from "../../lib/utils";
 
 type Item = {
   id: string;
@@ -17,7 +18,7 @@ type Item = {
 };
 
 export function InventoryPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const navigationMessage =
@@ -114,7 +115,9 @@ export function InventoryPage() {
                   </td>
                   <td className="px-2 py-2">{item.sku}</td>
                   <td className="px-2 py-2">{item.carat}</td>
-                  <td className="px-2 py-2">{item.sellingPriceEstimate}</td>
+                  <td className="px-2 py-2">
+                    {formatCurrency(item.sellingPriceEstimate, selectedShop)}
+                  </td>
                   <td className="px-2 py-2">
                     <Badge value={item.status} />
                   </td>

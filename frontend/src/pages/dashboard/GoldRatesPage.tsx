@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../hooks/useAuth";
+import { formatCurrency } from "../../lib/utils";
 
 const schema = z.object({
   rate18K: z.coerce.number().nonnegative(),
@@ -18,7 +19,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function GoldRatesPage() {
-  const { selectedShopId } = useAuth();
+  const { selectedShopId, selectedShop } = useAuth();
   const [current, setCurrent] = useState<any | null>(null);
   const [history, setHistory] = useState<any[]>([]);
 
@@ -106,11 +107,24 @@ export function GoldRatesPage() {
         </Card>
 
         <Card title="Current Rate">
-          <pre className="overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-emerald-200">
-            {current
-              ? JSON.stringify(current, null, 2)
-              : "No current rate available."}
-          </pre>
+          {current ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {(["rate18K", "rate21K", "rate22K", "rate24K"] as const).map(
+                (key) => (
+                  <div key={key} className="rounded-lg bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">
+                      {key.replace("rate", "").replace("K", "K")}
+                    </p>
+                    <p className="font-semibold">
+                      {formatCurrency(current[key], selectedShop)}
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No current rate available.</p>
+          )}
         </Card>
       </div>
 
@@ -132,10 +146,18 @@ export function GoldRatesPage() {
                   <td className="px-2 py-2">
                     {new Date(entry.effectiveDate).toLocaleString()}
                   </td>
-                  <td className="px-2 py-2">{entry.rate18K}</td>
-                  <td className="px-2 py-2">{entry.rate21K}</td>
-                  <td className="px-2 py-2">{entry.rate22K}</td>
-                  <td className="px-2 py-2">{entry.rate24K}</td>
+                  <td className="px-2 py-2">
+                    {formatCurrency(entry.rate18K, selectedShop)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatCurrency(entry.rate21K, selectedShop)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatCurrency(entry.rate22K, selectedShop)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatCurrency(entry.rate24K, selectedShop)}
+                  </td>
                 </tr>
               ))}
             </tbody>

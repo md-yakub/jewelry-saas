@@ -6,6 +6,8 @@ export type ShopMembership = {
   shop: {
     name: string;
     slug: string;
+    currencyCode?: string;
+    locale?: string;
   };
 };
 
