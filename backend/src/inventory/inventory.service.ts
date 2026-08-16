@@ -64,7 +64,7 @@ export class InventoryService {
   }
 
   async findItems(shopId: string, query: QueryItemsDto) {
-    const { page, limit, search, status, categoryId } = query;
+    const { page, limit, search, status, categoryId, includeTotal } = query;
 
     const where: Prisma.JewelryItemWhereInput = {
       shopId,
@@ -81,7 +81,7 @@ export class InventoryService {
         : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const findItems = () =>
       this.prisma.jewelryItem.findMany({
         where,
         include: {
@@ -89,18 +89,38 @@ export class InventoryService {
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.jewelryItem.count({ where }),
-    ]);
+        take: limit + 1,
+      });
+
+    let itemsWithLookahead: Awaited<ReturnType<typeof findItems>>;
+    let total: number | undefined;
+
+    if (includeTotal) {
+      [itemsWithLookahead, total] = await this.prisma.$transaction([
+        findItems(),
+        this.prisma.jewelryItem.count({ where }),
+      ]);
+    } else {
+      itemsWithLookahead = await findItems();
+    }
+
+    const hasNextPage = itemsWithLookahead.length > limit;
+    const items = hasNextPage
+      ? itemsWithLookahead.slice(0, limit)
+      : itemsWithLookahead;
 
     return {
       items,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        hasNextPage,
+        ...(total !== undefined
+          ? {
+              total,
+              totalPages: Math.ceil(total / limit),
+            }
+          : {}),
       },
     };
   }

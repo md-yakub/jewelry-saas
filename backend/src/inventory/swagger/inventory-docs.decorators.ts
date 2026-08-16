@@ -82,7 +82,7 @@ export const ApiInventoryListItems = () =>
     ApiOperation({
       summary: "List inventory items",
       description:
-        "Returns a paginated list of inventory items with optional search, status, and category filters.",
+        "Returns a paginated list of inventory items with optional search, status, and category filters. Exact totals are returned only when includeTotal is true.",
     }),
     shopParam(),
     ApiQuery({
@@ -113,6 +113,14 @@ export const ApiInventoryListItems = () =>
       name: "categoryId",
       required: false,
       example: "cat_01J1Z8X4Y5Q6R7S8T9V0W1X2Y3",
+    }),
+    ApiQuery({
+      name: "includeTotal",
+      required: false,
+      type: Boolean,
+      example: false,
+      description:
+        "When true, include exact total and totalPages values. Defaults to false.",
     }),
     ApiPaginatedOk(JewelryItemResponseDto),
     ApiStandardErrors({ forbidden: true, internal: true }),

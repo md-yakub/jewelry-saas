@@ -17,6 +17,44 @@ type Item = {
   sellingPriceEstimate: string;
 };
 
+type InventoryListResponse = {
+  items: Item[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+  };
+};
+
+const PAGE_LIMIT = 50;
+const paginationNavButtonClass =
+  "border border-slate-700 !bg-slate-800 !text-white shadow-sm hover:!bg-slate-700 focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-brand-500 focus-visible:!ring-offset-2 disabled:cursor-not-allowed disabled:!border-slate-300 disabled:!bg-slate-200 disabled:!text-slate-500 disabled:!opacity-100 disabled:hover:!bg-slate-200";
+const activePageButtonClass =
+  "min-w-10 border border-brand-700 !bg-brand-700 !text-white shadow-sm hover:!bg-brand-800 focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-brand-500 focus-visible:!ring-offset-2";
+const inactivePageButtonClass =
+  "min-w-10 border border-slate-300 !bg-white !text-slate-800 shadow-sm hover:!border-slate-400 hover:!bg-slate-100 focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-brand-500 focus-visible:!ring-offset-2";
+
+function getVisiblePages(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages: Array<number | "start-ellipsis" | "end-ellipsis"> = [1];
+  const start = Math.max(2, currentPage - 2);
+  const end = Math.min(totalPages - 1, currentPage + 2);
+
+  if (start > 2) pages.push("start-ellipsis");
+  for (let pageNumber = start; pageNumber <= end; pageNumber += 1) {
+    pages.push(pageNumber);
+  }
+  if (end < totalPages - 1) pages.push("end-ellipsis");
+  pages.push(totalPages);
+
+  return pages;
+}
+
 export function InventoryPage() {
   const { selectedShopId, selectedShop } = useAuth();
   const location = useLocation();
@@ -29,26 +67,56 @@ export function InventoryPage() {
       ? location.state.message
       : "";
   const [search, setSearch] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message] = useState(navigationMessage);
 
-  const load = async () => {
+  const load = async (requestedPage: number, searchTerm = appliedSearch) => {
     if (!selectedShopId) return;
     setLoading(true);
     try {
       const response = await http.get(`/shops/${selectedShopId}/items`, {
-        params: { page: 1, limit: 50, search: search || undefined },
+        params: {
+          page: requestedPage,
+          limit: PAGE_LIMIT,
+          includeTotal: true,
+          search: searchTerm || undefined,
+        },
       });
-      const data = unwrap<{ items: Item[] }>(response);
+      const data = unwrap<InventoryListResponse>(response);
       setItems(data.items);
+      setPage(data.pagination.page);
+      setTotalPages(Math.max(data.pagination.totalPages, 1));
     } finally {
       setLoading(false);
     }
   };
 
+  const applySearch = () => {
+    setAppliedSearch(search);
+    setPage(1);
+    void load(1, search);
+  };
+
+  const changePage = (requestedPage: number) => {
+    if (
+      loading ||
+      requestedPage < 1 ||
+      requestedPage > totalPages ||
+      requestedPage === page
+    ) {
+      return;
+    }
+
+    void load(requestedPage);
+  };
+
   useEffect(() => {
-    void load();
+    setPage(1);
+    void load(1);
   }, [selectedShopId]);
 
   useEffect(() => {
@@ -90,7 +158,7 @@ export function InventoryPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <Button onClick={() => void load()} disabled={loading}>
+          <Button onClick={applySearch} disabled={loading}>
             {loading ? "Loading..." : "Search"}
           </Button>
         </div>
@@ -133,6 +201,55 @@ export function InventoryPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+          <p className="text-sm text-slate-500">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              className={paginationNavButtonClass}
+              disabled={loading || page === 1}
+              onClick={() => changePage(page - 1)}
+            >
+              Previous
+            </Button>
+
+            {getVisiblePages(page, totalPages).map((pageItem) =>
+              typeof pageItem === "number" ? (
+                <Button
+                  key={pageItem}
+                  className={
+                    pageItem === page
+                      ? activePageButtonClass
+                      : inactivePageButtonClass
+                  }
+                  disabled={loading}
+                  onClick={() => changePage(pageItem)}
+                  aria-current={pageItem === page ? "page" : undefined}
+                >
+                  {pageItem}
+                </Button>
+              ) : (
+                <span
+                  key={pageItem}
+                  className="px-1 text-sm font-medium text-slate-500"
+                  aria-hidden="true"
+                >
+                  ...
+                </span>
+              ),
+            )}
+
+            <Button
+              className={paginationNavButtonClass}
+              disabled={loading || page >= totalPages}
+              onClick={() => changePage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
