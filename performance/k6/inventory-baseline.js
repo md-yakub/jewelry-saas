@@ -124,7 +124,7 @@ export function setup() {
 export default function ({ apiBaseUrl, accessToken, shopId }) {
   const loadLevel = loadLevels[exec.scenario.name];
   const response = http.get(
-    `${apiBaseUrl}/shops/${encodeURIComponent(shopId)}/items?page=1&limit=50`,
+    `${apiBaseUrl}/shops/${encodeURIComponent(shopId)}/items?page=1&limit=50&includeTotal=true`,
     {
       headers: {
         Accept: "application/json",
