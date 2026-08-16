@@ -7,9 +7,10 @@ membership's `shopId` from the wrapped authentication response, and exercises:
 GET /shops/:shopId/items?page=1&limit=50
 ```
 
-The staged profile ramps through 10, 50, and 100 virtual users, with a one-second
-pause per user iteration. It reports request count/rate, average, P95, P99 and
-maximum latency, and HTTP failure rate.
+The profile runs a 20-second warm-up followed by separate one-minute plateaus at
+10, 50, and 100 virtual users, with a one-second pause per user iteration. Each
+plateau reports its own request count/rate, average, P95, P99 and maximum
+latency, and HTTP failure rate.
 
 Required environment variables:
 

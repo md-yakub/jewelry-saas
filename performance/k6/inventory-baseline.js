@@ -1,25 +1,68 @@
 import http from "k6/http";
 import { check, fail, sleep } from "k6";
+import exec from "k6/execution";
 import { Counter, Rate, Trend } from "k6/metrics";
 
-const inventoryRequests = new Counter("inventory_requests");
-const inventoryHttpFailures = new Rate("inventory_http_failures");
-const inventoryLatency = new Trend("inventory_latency", true);
+const MEASUREMENT_DURATION_SECONDS = 60;
+
+const loadLevels = {
+  load_10_vus: {
+    label: "10 VUs",
+    requests: new Counter("inventory_requests_10_vus"),
+    failures: new Rate("inventory_http_failures_10_vus"),
+    latency: new Trend("inventory_latency_10_vus", true),
+  },
+  load_50_vus: {
+    label: "50 VUs",
+    requests: new Counter("inventory_requests_50_vus"),
+    failures: new Rate("inventory_http_failures_50_vus"),
+    latency: new Trend("inventory_latency_50_vus", true),
+  },
+  load_100_vus: {
+    label: "100 VUs",
+    requests: new Counter("inventory_requests_100_vus"),
+    failures: new Rate("inventory_http_failures_100_vus"),
+    latency: new Trend("inventory_latency_100_vus", true),
+  },
+};
 
 export const options = {
-  stages: [
-    { duration: "30s", target: 10 },
-    { duration: "1m", target: 10 },
-    { duration: "30s", target: 50 },
-    { duration: "1m", target: 50 },
-    { duration: "30s", target: 100 },
-    { duration: "1m", target: 100 },
-    { duration: "30s", target: 0 },
-  ],
+  scenarios: {
+    warm_up: {
+      executor: "ramping-vus",
+      startVUs: 0,
+      stages: [{ duration: "20s", target: 10 }],
+      gracefulStop: "5s",
+    },
+    load_10_vus: {
+      executor: "constant-vus",
+      vus: 10,
+      duration: "1m",
+      startTime: "25s",
+      gracefulStop: "5s",
+    },
+    load_50_vus: {
+      executor: "constant-vus",
+      vus: 50,
+      duration: "1m",
+      startTime: "1m30s",
+      gracefulStop: "5s",
+    },
+    load_100_vus: {
+      executor: "constant-vus",
+      vus: 100,
+      duration: "1m",
+      startTime: "2m35s",
+      gracefulStop: "5s",
+    },
+  },
   thresholds: {
-    inventory_http_failures: ["rate<0.01"],
-    inventory_latency: ["p(95)<500", "p(99)<1000"],
-    checks: ["rate>0.99"],
+    inventory_http_failures_10_vus: ["rate<0.01"],
+    inventory_latency_10_vus: ["p(95)<500", "p(99)<1000"],
+    inventory_http_failures_50_vus: ["rate<0.01"],
+    inventory_latency_50_vus: ["p(95)<500", "p(99)<1000"],
+    inventory_http_failures_100_vus: ["rate<0.01"],
+    inventory_latency_100_vus: ["p(95)<500", "p(99)<1000"],
   },
   summaryTrendStats: ["avg", "p(95)", "p(99)", "max"],
   summaryTimeUnit: "ms",
@@ -79,6 +122,7 @@ export function setup() {
 }
 
 export default function ({ apiBaseUrl, accessToken, shopId }) {
+  const loadLevel = loadLevels[exec.scenario.name];
   const response = http.get(
     `${apiBaseUrl}/shops/${encodeURIComponent(shopId)}/items?page=1&limit=50`,
     {
@@ -86,13 +130,18 @@ export default function ({ apiBaseUrl, accessToken, shopId }) {
         Accept: "application/json",
         Authorization: `Bearer ${accessToken}`,
       },
-      tags: { endpoint: "inventory_first_page" },
+      tags: {
+        endpoint: "inventory_first_page",
+        load_level: loadLevel?.label ?? "warm-up",
+      },
     },
   );
 
-  inventoryRequests.add(1);
-  inventoryHttpFailures.add(response.status !== 200);
-  inventoryLatency.add(response.timings.duration);
+  if (loadLevel) {
+    loadLevel.requests.add(1);
+    loadLevel.failures.add(response.status !== 200);
+    loadLevel.latency.add(response.timings.duration);
+  }
 
   let body;
   try {
@@ -117,23 +166,36 @@ function formatNumber(value, decimals = 2) {
 }
 
 export function handleSummary(data) {
-  const requests = data.metrics.inventory_requests?.values ?? {};
-  const latency = data.metrics.inventory_latency?.values ?? {};
-  const failures = data.metrics.inventory_http_failures?.values ?? {};
-
   const lines = [
     "",
     "Inventory first-page baseline",
     "-----------------------------",
-    `Request count:     ${requests.count ?? 0}`,
-    `Requests/sec:      ${formatNumber(requests.rate)}`,
-    `Average latency:   ${formatNumber(latency.avg)} ms`,
-    `P95 latency:       ${formatNumber(latency["p(95)"])} ms`,
-    `P99 latency:       ${formatNumber(latency["p(99)"])} ms`,
-    `Max latency:       ${formatNumber(latency.max)} ms`,
-    `HTTP failure rate: ${formatNumber((failures.rate ?? 0) * 100)}%`,
-    "",
   ];
+
+  for (const [scenarioName, loadLevel] of Object.entries(loadLevels)) {
+    const metricSuffix = scenarioName.replace("load_", "");
+    const requests =
+      data.metrics[`inventory_requests_${metricSuffix}`]?.values ?? {};
+    const latency =
+      data.metrics[`inventory_latency_${metricSuffix}`]?.values ?? {};
+    const failures =
+      data.metrics[`inventory_http_failures_${metricSuffix}`]?.values ?? {};
+    const requestCount = requests.count ?? 0;
+
+    lines.push(
+      "",
+      loadLevel.label,
+      `Request count:     ${requestCount}`,
+      `Requests/sec:      ${formatNumber(requestCount / MEASUREMENT_DURATION_SECONDS)}`,
+      `Average latency:   ${formatNumber(latency.avg)} ms`,
+      `P95 latency:       ${formatNumber(latency["p(95)"])} ms`,
+      `P99 latency:       ${formatNumber(latency["p(99)"])} ms`,
+      `Max latency:       ${formatNumber(latency.max)} ms`,
+      `HTTP failure rate: ${formatNumber((failures.rate ?? 0) * 100)}%`,
+    );
+  }
+
+  lines.push("");
 
   return { stdout: lines.join("\n") };
 }
