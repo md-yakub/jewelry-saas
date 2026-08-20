@@ -1,15 +1,10 @@
-x-backend-environment: &backend-environment
-  NODE_ENV: production
-  PORT: 3000
-  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jewelry_saas?schema=public&connection_limit=5&pool_timeout=10
-
 x-api-common: &api-common
   build:
     context: ./backend
     dockerfile: Dockerfile
   restart: unless-stopped
   env_file:
-    - ./backend/.env
+    - ./backend/.env.docker
   depends_on:
     migrate:
       condition: service_completed_successfully
@@ -50,8 +45,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: "no"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jewelry_saas?schema=public&connection_limit=5&pool_timeout=10
+    env_file:
+      - ./backend/.env.docker
     command: ["npm", "run", "prisma:deploy"]
     depends_on:
       postgres:
@@ -60,19 +55,16 @@ services:
   api-1:
     <<: *api-common
     environment:
-      <<: *backend-environment
       INSTANCE_ID: api-1
 
   api-2:
     <<: *api-common
     environment:
-      <<: *backend-environment
       INSTANCE_ID: api-2
 
   api-3:
     <<: *api-common
     environment:
-      <<: *backend-environment
       INSTANCE_ID: api-3
 
   nginx:

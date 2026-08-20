@@ -120,7 +120,7 @@ Services:
 - NGINX/API entrypoint: `http://localhost:3000`
 - Three internal NestJS replicas: `api-1`, `api-2`, and `api-3`
 - One-shot Prisma migration service: `migrate`
-- PostgreSQL: `localhost:5432`
+- PostgreSQL: `127.0.0.1:5433`
 
 NGINX distributes requests across the three API replicas. Responses include an
 `X-Instance-Id` header so the selected replica can be observed.
