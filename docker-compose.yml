@@ -1,3 +1,31 @@
+x-backend-environment: &backend-environment
+  NODE_ENV: production
+  PORT: 3000
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jewelry_saas?schema=public&connection_limit=5&pool_timeout=10
+
+x-api-common: &api-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  env_file:
+    - ./backend/.env
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+  healthcheck:
+    test:
+      [
+        "CMD",
+        "node",
+        "-e",
+        "fetch('http://127.0.0.1:3000/health').then(response => { if (!response.ok) process.exit(1) }).catch(() => process.exit(1))",
+      ]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+    start_period: 10s
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -8,9 +36,65 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: jewelry_saas
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jewelry_saas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jewelry_saas?schema=public&connection_limit=5&pool_timeout=10
+    command: ["npm", "run", "prisma:deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-1:
+    <<: *api-common
+    environment:
+      <<: *backend-environment
+      INSTANCE_ID: api-1
+
+  api-2:
+    <<: *api-common
+    environment:
+      <<: *backend-environment
+      INSTANCE_ID: api-2
+
+  api-3:
+    <<: *api-common
+    environment:
+      <<: *backend-environment
+      INSTANCE_ID: api-3
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./infrastructure/nginx/backend.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
+      api-3:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   postgres_data:

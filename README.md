@@ -112,15 +112,25 @@ Frontend runs on `http://localhost:5173`
 
 ```bash
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
 docker-compose up --build
 ```
 
 Services:
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3000`
+- NGINX/API entrypoint: `http://localhost:3000`
+- Three internal NestJS replicas: `api-1`, `api-2`, and `api-3`
+- One-shot Prisma migration service: `migrate`
 - PostgreSQL: `localhost:5432`
+
+NGINX distributes requests across the three API replicas. Responses include an
+`X-Instance-Id` header so the selected replica can be observed.
+
+### Known horizontal-scaling limitation
+
+Invoice numbers are currently generated from the shop's invoice count. Concurrent
+sale creation can therefore attempt the same invoice number and trigger the
+database uniqueness constraint. This write path requires separate concurrency
+hardening; it is intentionally unchanged in the initial replica setup.
 
 ---
 

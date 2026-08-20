@@ -2,6 +2,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
@@ -9,7 +10,12 @@ import { GlobalExceptionFilter } from "./common/filters/global-exception.filter"
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+  const instanceId = config.get<string>("INSTANCE_ID", "local");
 
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader("X-Instance-Id", instanceId);
+    next();
+  });
   app.use(helmet());
   app.enableCors({
     origin: config.get<string>("CORS_ORIGIN", "http://localhost:5173"),

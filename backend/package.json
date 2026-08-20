@@ -14,9 +14,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed:roles": "ts-node src/prisma/seed-roles.ts",
-    "seed:dev-user": "ts-node src/prisma/seed-dev-user.ts",
-    "seed:super-admin": "ts-node src/prisma/seed-super-admin.ts",
+    "seed:roles": "ts-node prisma/seeds/roles.seed.ts",
+    "seed:dev-user": "ts-node prisma/seeds/dev-user.seed.ts",
+    "seed:super-admin": "ts-node prisma/seeds/super-admin.seed.ts",
     "seed:performance": "ts-node prisma/seed-performance.ts",
     "loadtest:inventory": "k6 run ../performance/k6/inventory-baseline.js"
   },

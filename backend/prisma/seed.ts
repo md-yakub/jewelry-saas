@@ -1,1 +1,1 @@
-import "../src/prisma/seed-super-admin";
+import "./seeds/super-admin.seed";
