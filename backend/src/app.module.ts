@@ -16,6 +16,7 @@ import { InventoryModule } from "./inventory/inventory.module";
 import { OldGoldExchangesModule } from "./old-gold-exchanges/old-gold-exchanges.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ReportsModule } from "./reports/reports.module";
+import { RedisCacheModule } from "./redis-cache/redis-cache.module";
 import { SalesModule } from "./sales/sales.module";
 import { ShopsModule } from "./shops/shops.module";
 import { SuperAdminModule } from "./super-admin/super-admin.module";
@@ -24,6 +25,7 @@ import { SuperAdminModule } from "./super-admin/super-admin.module";
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    RedisCacheModule,
     AuthModule,
     InventoryModule,
     GoldRatesModule,

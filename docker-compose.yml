@@ -1,4 +1,5 @@
 x-api-common: &api-common
+  image: jewelry-saas-backend:local
   build:
     context: ./backend
     dockerfile: Dockerfile
@@ -41,6 +42,7 @@ services:
       retries: 10
 
   migrate:
+    image: jewelry-saas-backend:local
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -51,6 +53,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   api-1:
     <<: *api-common

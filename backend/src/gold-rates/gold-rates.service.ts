@@ -1,16 +1,30 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Carat, Prisma } from "@prisma/client";
+import { ConfigService } from "@nestjs/config";
+import { Carat, GoldRate, Prisma } from "@prisma/client";
 import { AuditLogsService } from "../audit-logs/audit-logs.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { RedisCacheService } from "../redis-cache/redis-cache.service";
 import { CreateGoldRateDto } from "./dto/create-gold-rate.dto";
 import { QueryGoldRateHistoryDto } from "./dto/query-gold-rate-history.dto";
 
 @Injectable()
 export class GoldRatesService {
+  private readonly currentRateTtlSeconds: number;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogsService: AuditLogsService,
-  ) {}
+    private readonly redisCacheService: RedisCacheService,
+    configService: ConfigService,
+  ) {
+    const configuredTtl = Number(
+      configService.get<string>("GOLD_RATE_CACHE_TTL_SECONDS", "600"),
+    );
+    this.currentRateTtlSeconds =
+      Number.isFinite(configuredTtl) && configuredTtl > 0
+        ? Math.floor(configuredTtl)
+        : 600;
+  }
 
   async create(shopId: string, dto: CreateGoldRateDto, userId: string) {
     const goldRate = await this.prisma.goldRate.create({
@@ -27,6 +41,8 @@ export class GoldRatesService {
       },
     });
 
+    await this.redisCacheService.delete(this.currentRateCacheKey(shopId));
+
     await this.auditLogsService.create({
       userId,
       shopId,
@@ -40,6 +56,12 @@ export class GoldRatesService {
   }
 
   async getCurrent(shopId: string) {
+    const cacheKey = this.currentRateCacheKey(shopId);
+    const cached = await this.redisCacheService.get<GoldRate>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const goldRate = await this.prisma.goldRate.findFirst({
       where: { shopId },
       orderBy: { effectiveDate: "desc" },
@@ -48,6 +70,12 @@ export class GoldRatesService {
     if (!goldRate) {
       throw new NotFoundException("No gold rate found for this shop");
     }
+
+    await this.redisCacheService.set(
+      cacheKey,
+      goldRate,
+      this.currentRateTtlSeconds,
+    );
 
     return goldRate;
   }
@@ -103,5 +131,9 @@ export class GoldRatesService {
       default:
         return Number(current.rate22K);
     }
+  }
+
+  private currentRateCacheKey(shopId: string): string {
+    return `jewelry:shop:${shopId}:gold-rate:current:v1`;
   }
 }
