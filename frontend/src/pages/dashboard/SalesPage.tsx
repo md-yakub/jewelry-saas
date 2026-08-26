@@ -67,6 +67,27 @@ export function SalesPage() {
     void load();
   }, [selectedShopId]);
 
+  const hasPendingInvoice = sales.some((sale) =>
+    ["PENDING", "PROCESSING"].includes(sale.invoice?.pdfStatus),
+  );
+
+  useEffect(() => {
+    if (!selectedShopId || !hasPendingInvoice) return;
+
+    const timer = window.setInterval(() => {
+      void http
+        .get(`/shops/${selectedShopId}/sales`, {
+          params: { page: 1, limit: 20 },
+        })
+        .then((response) => {
+          setSales(unwrap<{ items: any[] }>(response).items);
+        })
+        .catch(() => undefined);
+    }, 3_000);
+
+    return () => window.clearInterval(timer);
+  }, [hasPendingInvoice, selectedShopId]);
+
   const submitSale = async () => {
     if (!selectedShopId || selectedItemIds.length === 0) return;
 
@@ -78,11 +99,34 @@ export function SalesPage() {
       taxAmount: Number(taxAmount || 0),
     });
 
-    setMessage("Sale created successfully. Inventory updated to SOLD.");
+    setMessage(
+      "Sale created successfully. Inventory updated to SOLD. Generating invoice...",
+    );
     setSelectedItemIds([]);
     setDiscountAmount("0");
     setTaxAmount("0");
     await load();
+  };
+
+  const downloadInvoice = async (sale: any) => {
+    if (!selectedShopId || !sale.invoice) return;
+
+    try {
+      const response = await http.get(
+        `/shops/${selectedShopId}/sales/${sale.id}/invoice/pdf`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${sale.invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setMessage("Invoice PDF is not available yet.");
+    }
   };
 
   return (
@@ -212,6 +256,29 @@ export function SalesPage() {
                 </p>
                 <div className="mt-1">
                   <Badge value={sale.status} />
+                </div>
+                <div className="mt-2 text-xs">
+                  {sale.invoice?.pdfStatus === "READY" ? (
+                    <div className="space-y-2">
+                      <p className="font-medium text-emerald-700">
+                        Invoice ready
+                      </p>
+                      <Button
+                        className="px-3 py-1 text-xs"
+                        onClick={() => void downloadInvoice(sale)}
+                      >
+                        Download PDF
+                      </Button>
+                    </div>
+                  ) : sale.invoice?.pdfStatus === "FAILED" ? (
+                    <p className="font-medium text-rose-700">
+                      Generation failed
+                    </p>
+                  ) : (
+                    <p className="font-medium text-amber-700">
+                      Generating invoice...
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

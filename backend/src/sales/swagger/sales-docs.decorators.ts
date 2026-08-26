@@ -1,5 +1,12 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiQuery,
+} from "@nestjs/swagger";
 import {
   ApiEnvelopeCreated,
   ApiEnvelopeOk,
@@ -8,6 +15,7 @@ import {
 } from "../../common/swagger/api-response.decorators";
 import {
   InvoiceResponseDto,
+  InvoicePdfStatusResponseDto,
   RefundResponseDto,
   SaleCreatedResponseDto,
   SaleResponseDto,
@@ -128,6 +136,34 @@ export const ApiSalesInvoice = () =>
     saleParam(),
     ApiEnvelopeOk(InvoiceResponseDto),
     ApiStandardErrors({ forbidden: true, notFound: true, internal: true }),
+  );
+
+export const ApiSalesInvoicePdfStatus = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Get invoice PDF status",
+      description: "Returns background PDF generation state for a sale invoice.",
+    }),
+    shopParam(),
+    saleParam(),
+    ApiEnvelopeOk(InvoicePdfStatusResponseDto),
+    ApiStandardErrors({ forbidden: true, notFound: true, internal: true }),
+  );
+
+export const ApiSalesInvoicePdfDownload = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Download invoice PDF",
+      description: "Downloads the generated PDF when its state is READY.",
+    }),
+    shopParam(),
+    saleParam(),
+    ApiProduces("application/pdf"),
+    ApiOkResponse({
+      description: "Generated invoice PDF.",
+      schema: { type: "string", format: "binary" },
+    }),
+    ApiStandardErrors({ forbidden: true, notFound: true, conflict: true }),
   );
 
 export const ApiSalesRefund = () =>

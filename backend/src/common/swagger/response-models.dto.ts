@@ -3,6 +3,7 @@ import {
   Carat,
   CustomOrderStatus,
   ItemStatus,
+  InvoicePdfStatus,
   PaymentMethod,
   RoleCode,
   SaleStatus,
@@ -418,10 +419,40 @@ export class InvoiceResponseDto {
   htmlContent!: string;
 
   @ApiProperty({
+    description: "Background PDF generation state.",
+    enum: InvoicePdfStatus,
+    example: InvoicePdfStatus.PENDING,
+  })
+  pdfStatus!: InvoicePdfStatus;
+
+  @ApiPropertyOptional({
+    description: "Timestamp when PDF generation completed.",
+    example: "2026-08-26T10:00:00.000Z",
+  })
+  pdfGeneratedAt?: string;
+
+  @ApiProperty({
     description: "Issue timestamp.",
     example: "2026-07-19T10:00:00.000Z",
   })
   issuedAt!: string;
+}
+
+export class InvoicePdfStatusResponseDto {
+  @ApiProperty({ description: "Invoice identifier." })
+  id!: string;
+
+  @ApiProperty({ description: "Sale identifier." })
+  saleId!: string;
+
+  @ApiProperty({ description: "Invoice number." })
+  invoiceNumber!: string;
+
+  @ApiProperty({ enum: InvoicePdfStatus })
+  pdfStatus!: InvoicePdfStatus;
+
+  @ApiPropertyOptional({ description: "PDF generation completion timestamp." })
+  pdfGeneratedAt?: string;
 }
 
 export class SaleResponseDto {

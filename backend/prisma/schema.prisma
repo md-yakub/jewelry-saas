@@ -40,6 +40,13 @@ enum SaleStatus {
   REFUNDED
 }
 
+enum InvoicePdfStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum CustomOrderStatus {
   PENDING
   DESIGN_CONFIRMED
@@ -253,16 +260,23 @@ model SaleItem {
 }
 
 model Invoice {
-  id            String   @id @default(uuid())
-  shopId         String
-  saleId         String   @unique
-  invoiceNumber  String
-  currencyCode    String   @default("USD")
-  htmlContent    String
-  issuedAt       DateTime @default(now())
-  createdAt      DateTime @default(now())
-  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  id               String           @id @default(uuid())
+  shopId            String
+  saleId            String           @unique
+  invoiceNumber     String
+  currencyCode      String           @default("USD")
+  htmlContent       String
+  pdfStatus         InvoicePdfStatus @default(PENDING)
+  pdfPath           String?
+  pdfGeneratedAt    DateTime?
+  pdfFailureReason  String?
+  pdfJobId          String?          @unique
+  pdfAttemptCount   Int              @default(0)
+  pdfUpdatedAt      DateTime         @default(now()) @updatedAt
+  issuedAt          DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  shop              Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sale              Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@unique([shopId, invoiceNumber])
   @@index([shopId, issuedAt])

@@ -1,20 +1,49 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { ItemStatus, PaymentMethod, Prisma, SaleStatus } from "@prisma/client";
+import {
+  InvoicePdfStatus,
+  ItemStatus,
+  PaymentMethod,
+  Prisma,
+  SaleStatus,
+} from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { AuditLogsService } from "../audit-logs/audit-logs.service";
 import { AuthUser } from "../common/types/auth-user.type";
+import { InvoicePdfStorageService } from "../invoice-pdf/invoice-pdf-storage.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { InvoiceGenerationJob } from "../rabbitmq/invoice-job.contract";
+import { RabbitMqService } from "../rabbitmq/rabbitmq.service";
 import { CreateSaleDto } from "./dto/create-sale.dto";
 import { QuerySalesDto } from "./dto/query-sales.dto";
 
+const publicInvoiceSelect = {
+  id: true,
+  shopId: true,
+  saleId: true,
+  invoiceNumber: true,
+  currencyCode: true,
+  htmlContent: true,
+  pdfStatus: true,
+  pdfGeneratedAt: true,
+  issuedAt: true,
+  createdAt: true,
+} satisfies Prisma.InvoiceSelect;
+
 @Injectable()
 export class SalesService {
+  private readonly logger = new Logger(SalesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly rabbitMqService: RabbitMqService,
+    private readonly invoicePdfStorage: InvoicePdfStorageService,
   ) {}
 
   async create(shopId: string, dto: CreateSaleDto, user: AuthUser) {
@@ -121,6 +150,8 @@ export class SalesService {
       throw new BadRequestException("Sum of payments must match total amount");
     }
 
+    const pdfJobId = randomUUID();
+    const pdfRequestedAt = new Date();
     const created = await this.prisma.$transaction(async (tx) => {
       const sale = await tx.sale.create({
         data: {
@@ -206,6 +237,7 @@ export class SalesService {
           invoiceNumber,
           currencyCode: shop.currencyCode,
           htmlContent,
+          pdfJobId,
         },
       });
 
@@ -221,7 +253,22 @@ export class SalesService {
       newValue: created.sale as unknown as Prisma.InputJsonValue,
     });
 
-    return created;
+    const pdfStatus = await this.publishInvoicePdfJob({
+      jobId: pdfJobId,
+      shopId,
+      saleId: created.sale.id,
+      invoiceId: created.invoice.id,
+      requestedAt: pdfRequestedAt.toISOString(),
+      attempt: 0,
+    });
+
+    return {
+      sale: created.sale,
+      invoice: {
+        ...this.toPublicInvoice(created.invoice),
+        pdfStatus,
+      },
+    };
   }
 
   async findAll(shopId: string, query: QuerySalesDto) {
@@ -264,7 +311,9 @@ export class SalesService {
           customer: {
             select: { id: true, name: true, phone: true },
           },
-          invoice: true,
+          invoice: {
+            select: publicInvoiceSelect,
+          },
           items: true,
           payments: true,
         },
@@ -306,7 +355,9 @@ export class SalesService {
           },
         },
         payments: true,
-        invoice: true,
+        invoice: {
+          select: publicInvoiceSelect,
+        },
       },
     });
 
@@ -320,7 +371,8 @@ export class SalesService {
   async getInvoice(shopId: string, saleId: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { saleId, shopId },
-      include: {
+      select: {
+        ...publicInvoiceSelect,
         sale: {
           include: {
             items: true,
@@ -338,6 +390,61 @@ export class SalesService {
     }
 
     return invoice;
+  }
+
+  async getInvoicePdfStatus(shopId: string, saleId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { saleId, shopId },
+      select: {
+        id: true,
+        saleId: true,
+        invoiceNumber: true,
+        pdfStatus: true,
+        pdfGeneratedAt: true,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException("Invoice not found");
+    }
+
+    return invoice;
+  }
+
+  async getInvoicePdfFile(shopId: string, saleId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { saleId, shopId },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        pdfStatus: true,
+        pdfPath: true,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException("Invoice not found");
+    }
+    if (invoice.pdfStatus !== InvoicePdfStatus.READY || !invoice.pdfPath) {
+      throw new ConflictException("Invoice PDF is not ready");
+    }
+
+    try {
+      const file = await this.invoicePdfStorage.open(invoice.pdfPath);
+      return {
+        ...file,
+        filename: `${invoice.invoiceNumber.replace(/[^A-Za-z0-9_-]/g, "-")}.pdf`,
+      };
+    } catch {
+      await this.prisma.invoice.updateMany({
+        where: { id: invoice.id, shopId },
+        data: {
+          pdfStatus: InvoicePdfStatus.FAILED,
+          pdfFailureReason: "Generated PDF file is unavailable",
+        },
+      });
+      throw new NotFoundException("Invoice PDF file not found");
+    }
   }
 
   async refund(shopId: string, saleId: string, user: AuthUser) {
@@ -393,6 +500,65 @@ export class SalesService {
     const sequence = (count + 1).toString().padStart(5, "0");
 
     return `INV-${datePart}-${sequence}`;
+  }
+
+  private async publishInvoicePdfJob(
+    job: InvoiceGenerationJob,
+  ): Promise<InvoicePdfStatus> {
+    try {
+      await this.rabbitMqService.publishInvoiceJob(job);
+      return InvoicePdfStatus.PENDING;
+    } catch (error) {
+      this.logger.error(
+        `Unable to publish invoice PDF job ${job.jobId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      try {
+        await this.prisma.invoice.updateMany({
+          where: {
+            id: job.invoiceId,
+            shopId: job.shopId,
+            saleId: job.saleId,
+            pdfJobId: job.jobId,
+          },
+          data: {
+            pdfStatus: InvoicePdfStatus.FAILED,
+            pdfFailureReason: "Unable to enqueue PDF generation",
+          },
+        });
+        return InvoicePdfStatus.FAILED;
+      } catch (statusError) {
+        this.logger.error(
+          `Unable to mark invoice PDF job failed: ${statusError instanceof Error ? statusError.message : String(statusError)}`,
+        );
+        return InvoicePdfStatus.PENDING;
+      }
+    }
+  }
+
+  private toPublicInvoice(invoice: {
+    id: string;
+    shopId: string;
+    saleId: string;
+    invoiceNumber: string;
+    currencyCode: string;
+    htmlContent: string;
+    pdfStatus: InvoicePdfStatus;
+    pdfGeneratedAt: Date | null;
+    issuedAt: Date;
+    createdAt: Date;
+  }) {
+    return {
+      id: invoice.id,
+      shopId: invoice.shopId,
+      saleId: invoice.saleId,
+      invoiceNumber: invoice.invoiceNumber,
+      currencyCode: invoice.currencyCode,
+      htmlContent: invoice.htmlContent,
+      pdfStatus: invoice.pdfStatus,
+      pdfGeneratedAt: invoice.pdfGeneratedAt,
+      issuedAt: invoice.issuedAt,
+      createdAt: invoice.createdAt,
+    };
   }
 
   private generateInvoiceHtml(params: {

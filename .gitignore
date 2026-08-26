@@ -118,6 +118,7 @@ temp/
 *.pid
 *.seed
 *.pid.lock
+backend/storage/
 
 # =====================================================
 # Archives

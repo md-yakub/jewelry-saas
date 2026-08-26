@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Res } from "@nestjs/common";
 import { RoleCode } from "@prisma/client";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Response } from "express";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { AuthUser } from "../common/types/auth-user.type";
@@ -11,6 +12,8 @@ import {
   ApiSalesCreate,
   ApiSalesGet,
   ApiSalesInvoice,
+  ApiSalesInvoicePdfDownload,
+  ApiSalesInvoicePdfStatus,
   ApiSalesList,
   ApiSalesRefund,
 } from "./swagger/sales-docs.decorators";
@@ -71,6 +74,45 @@ export class SalesController {
   @ApiSalesInvoice()
   getInvoice(@Param("shopId") shopId: string, @Param("id") id: string) {
     return this.salesService.getInvoice(shopId, id);
+  }
+
+  @Roles(
+    RoleCode.SHOP_OWNER,
+    RoleCode.MANAGER,
+    RoleCode.STAFF,
+    RoleCode.SUPER_ADMIN,
+  )
+  @Get(":id/invoice/pdf/status")
+  @ApiSalesInvoicePdfStatus()
+  getInvoicePdfStatus(
+    @Param("shopId") shopId: string,
+    @Param("id") id: string,
+  ) {
+    return this.salesService.getInvoicePdfStatus(shopId, id);
+  }
+
+  @Roles(
+    RoleCode.SHOP_OWNER,
+    RoleCode.MANAGER,
+    RoleCode.STAFF,
+    RoleCode.SUPER_ADMIN,
+  )
+  @Get(":id/invoice/pdf")
+  @ApiSalesInvoicePdfDownload()
+  async downloadInvoicePdf(
+    @Param("shopId") shopId: string,
+    @Param("id") id: string,
+    @Res() response: Response,
+  ): Promise<void> {
+    const file = await this.salesService.getInvoicePdfFile(shopId, id);
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader("Content-Length", file.size);
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${file.filename}"`,
+    );
+    file.stream.on("error", () => response.destroy());
+    file.stream.pipe(response);
   }
 
   @Roles(RoleCode.SHOP_OWNER, RoleCode.MANAGER, RoleCode.SUPER_ADMIN)

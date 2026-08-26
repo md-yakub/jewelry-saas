@@ -7,7 +7,9 @@ const styles: Record<string, string> = {
   ACTIVE: "bg-emerald-100 text-emerald-700",
   INACTIVE: "bg-rose-100 text-rose-700",
   PENDING: "bg-amber-100 text-amber-700",
+  PROCESSING: "bg-sky-100 text-sky-700",
   READY: "bg-emerald-100 text-emerald-700",
+  FAILED: "bg-rose-100 text-rose-700",
   DELIVERED: "bg-sky-100 text-sky-700",
   CANCELLED: "bg-rose-100 text-rose-700",
 };
