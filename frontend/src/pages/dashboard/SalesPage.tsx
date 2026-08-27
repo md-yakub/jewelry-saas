@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
+import { InvoicePdfStatus } from "../../components/sales/InvoicePdfStatus";
 import { useAuth } from "../../hooks/useAuth";
 import { formatCurrency } from "../../lib/utils";
 
@@ -258,27 +259,10 @@ export function SalesPage() {
                   <Badge value={sale.status} />
                 </div>
                 <div className="mt-2 text-xs">
-                  {sale.invoice?.pdfStatus === "READY" ? (
-                    <div className="space-y-2">
-                      <p className="font-medium text-emerald-700">
-                        Invoice ready
-                      </p>
-                      <Button
-                        className="px-3 py-1 text-xs"
-                        onClick={() => void downloadInvoice(sale)}
-                      >
-                        Download PDF
-                      </Button>
-                    </div>
-                  ) : sale.invoice?.pdfStatus === "FAILED" ? (
-                    <p className="font-medium text-rose-700">
-                      Generation failed
-                    </p>
-                  ) : (
-                    <p className="font-medium text-amber-700">
-                      Generating invoice...
-                    </p>
-                  )}
+                  <InvoicePdfStatus
+                    status={sale.invoice?.pdfStatus}
+                    onDownload={() => void downloadInvoice(sale)}
+                  />
                 </div>
               </div>
             ))}
