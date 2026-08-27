@@ -1,6 +1,7 @@
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
@@ -8,9 +9,12 @@ import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
   const instanceId = config.get<string>("INSTANCE_ID", "local");
+
+  app.enableShutdownHooks();
+  app.set("trust proxy", 1);
 
   app.use((_request: Request, response: Response, next: NextFunction) => {
     response.setHeader("X-Instance-Id", instanceId);

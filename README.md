@@ -1,218 +1,159 @@
-# Jewelry SaaS (`jewelry-saas`)
+# Jewelry SaaS
 
-Full-stack multi-tenant Jewelry Shop SaaS built with:
+Jewelry SaaS is a multi-tenant jewelry shop management platform for inventory,
+pricing, customers, sales, and operational reporting. It combines a React
+frontend with a horizontally scaled NestJS API, tenant-scoped data access, and
+asynchronous invoice PDF generation.
 
-- Backend: NestJS + TypeScript + Prisma + PostgreSQL
-- Auth: JWT access token + refresh token (hashed in DB)
-- Authorization: RBAC + shop-level access guard
-- Frontend: React + Vite + TypeScript + Tailwind
-- Docs: Swagger/OpenAPI at `/api/docs`
-- Deployment: Docker + docker-compose
-- Observability: Prometheus metrics + provisioned Grafana dashboard
+## Key features
 
----
+- **Inventory:** jewelry items, categories, status tracking, search, filters, and pagination
+- **Pricing:** shop-specific gold rates, current-rate caching, and jewelry price calculations
+- **Customers and sales:** customer records, point-of-sale flow, payments, refunds, and invoices
+- **Invoice PDFs:** asynchronous generation, status tracking, retry handling, and secure download
+- **Shop operations:** old-gold exchanges, custom orders, craftsmen, and audit logs
+- **Reporting:** sales, inventory value, profit, gold-rate history, and daily closing summaries
+- **Multi-tenancy:** shop-scoped data, JWT authentication, RBAC, shop guards, and Super Admin views
 
-## Project Structure
+## Tech stack
 
-```text
-jewelry-saas/
-  backend/
-  frontend/
-  docker-compose.yml
-  README.md
+| Area | Technologies |
+| --- | --- |
+| Frontend | React, Vite, TypeScript, Tailwind CSS, Axios, React Hook Form, Zod |
+| Backend | NestJS, TypeScript, Prisma, Passport/JWT, PDFKit, NestJS Throttler |
+| Database | PostgreSQL |
+| Infrastructure | Docker Compose, NGINX, Redis, RabbitMQ, local PDF volume |
+| Performance and testing | k6, Jest, ts-jest, Vitest, React Testing Library |
+| Observability | Prometheus, Grafana, prom-client |
+| CI | GitHub Actions |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    FE[React Frontend] --> NG[NGINX :3000]
+    NG --> A1[NestJS API 1]
+    NG --> A2[NestJS API 2]
+    NG --> A3[NestJS API 3]
+
+    A1 --> DB[(PostgreSQL)]
+    A2 --> DB
+    A3 --> DB
+    A1 --> R[(Redis)]
+    A2 --> R
+    A3 --> R
+
+    A1 --> MQ[RabbitMQ]
+    A2 --> MQ
+    A3 --> MQ
+    MQ --> W[Invoice Worker]
+    W --> DB
+    W --> PDF[(PDF Volume)]
+
+    P[Prometheus] --> A1
+    P --> A2
+    P --> A3
+    G[Grafana] --> P
 ```
 
----
+## Running locally
 
-## Backend Features
+### Requirements
 
-- NestJS modular architecture with:
-  - Modules, Controllers, Services, DTOs
-  - Global ValidationPipe
-  - Global exception filter
-  - JWT auth guard, role guard, shop access guard
-  - Global response interceptor
-- Multi-tenant data model with `shopId` isolation
-- Prisma schema includes:
-  - User, Shop, ShopMember, Role
-  - Customer, GoldRate, JewelryItem, JewelryCategory
-  - Sale, SaleItem, Invoice, Payment
-  - OldGoldExchange, CustomOrder, Craftsman, AuditLog
-- Auth endpoints:
-  - `POST /auth/register-shop`
-  - `POST /auth/login`
-  - `POST /auth/refresh`
-  - `POST /auth/logout`
-  - `GET /auth/me`
-- Domain modules:
-  - Inventory (`/shops/:shopId/items`)
-  - Gold Rates (`/shops/:shopId/gold-rates`)
-  - Calculator (`/shops/:shopId/calculator/price`)
-  - Sales + Invoice + Refund (`/shops/:shopId/sales`)
-  - Old Gold Exchange (`/shops/:shopId/old-gold-exchanges`)
-  - Customers (`/shops/:shopId/customers`)
-  - Custom Orders + Craftsmen (`/shops/:shopId/custom-orders`, `/shops/:shopId/craftsmen`)
-  - Reports (`/shops/:shopId/reports/...`)
-  - Audit Logs (`/shops/:shopId/audit-logs`)
+- Node.js 20 and npm
+- Docker with Docker Compose
+- k6 only when running the inventory benchmark
 
----
+### Start from a fresh clone
 
-## Frontend Features
+Create host-development environment files:
 
-- Auth screens:
-  - Login
-  - Register shop
-- Protected app shell:
-  - Role-aware sidebar menu
-  - Shop selector
-- Pages:
-  - Dashboard
-  - Inventory list
-  - Add/Edit inventory item
-  - Gold rates page
-  - Customers page
-  - Sales/POS page
-  - Price calculator page
-  - Custom orders page
-  - Reports page
-- Uses React Hook Form + Zod validation and Axios API client
-
----
-
-## Local Setup (Without Docker)
-
-### 1) Backend
-
-```bash
-cd backend
-cp .env.example .env
-npm install
-npx prisma generate
-npx prisma migrate dev --name init
-npm run seed:roles
-npm run start:dev
+```powershell
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.example frontend/.env
 ```
 
-Backend runs on `http://localhost:3000`
-Swagger docs: `http://localhost:3000/api/docs`
+Start the backend infrastructure. The one-shot `migrate` service builds the
+shared backend image and runs `prisma migrate deploy` before the API replicas
+start:
 
-### 2) Frontend
+```powershell
+docker compose up -d --build
+```
 
-```bash
+Run the frontend outside Docker:
+
+```powershell
 cd frontend
-cp .env.example .env
-npm install
+npm ci
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`
+For backend commands executed from the host:
 
----
-
-## Docker Setup
-
-```bash
-cp backend/.env.example backend/.env
-docker-compose up --build
-```
-
-Services:
-
-- NGINX/API entrypoint: `http://localhost:3000`
-- Three internal NestJS replicas: `api-1`, `api-2`, and `api-3`
-- One-shot Prisma migration service: `migrate`
-- PostgreSQL: `127.0.0.1:5433`
-- Redis: `127.0.0.1:6379`
-- RabbitMQ management UI: `http://localhost:15672`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3001`
-
-NGINX distributes requests across the three API replicas. Responses include an
-`X-Instance-Id` header so the selected replica can be observed.
-
-### Known horizontal-scaling limitation
-
-Invoice numbers are currently generated from the shop's invoice count. Concurrent
-sale creation can therefore attempt the same invoice number and trigger the
-database uniqueness constraint. This write path requires separate concurrency
-hardening; it is intentionally unchanged in the initial replica setup.
-
-## Monitoring
-
-Each NestJS replica exposes Prometheus-format metrics at `/metrics`. Prometheus
-scrapes `api-1:3000`, `api-2:3000`, and `api-3:3000` directly over the Docker
-network; NGINX is not part of the scrape path. Grafana is provisioned with the
-Prometheus datasource and the **Jewelry SaaS API Overview** dashboard.
-
-The dashboard includes:
-
-- Requests per second
-- P95 and P99 HTTP latency
-- HTTP error rate
-- Request count and request rate by API replica
-- Node.js resident memory and CPU usage by replica
-
-HTTP metrics use normalized NestJS route templates, such as
-`/shops/:shopId/items`. Tenant identifiers, user identifiers, emails, and raw URL
-IDs are not used as labels.
-
-After starting the Docker stack, open Grafana at `http://localhost:3001` (the
-initial local login is `admin` / `admin`) and select the provisioned dashboard.
-Run the existing inventory benchmark in another terminal while watching it:
-
-```bash
+```powershell
 cd backend
-API_BASE_URL=http://localhost:3000 \
-LOGIN_EMAIL=benchmark@example.local \
-LOGIN_PASSWORD=your-benchmark-password \
-npm run loadtest:inventory
+npm install
+npx prisma generate
 ```
 
-Replace the example credentials with the dedicated performance user. Prometheus
-targets and raw queries can be inspected at `http://localhost:9090`.
+Application seeds are opt-in. Use the role/development/Super Admin scripts only
+for the local account setup you need; the dedicated performance seed remains
+separate from normal seeding.
 
----
+### Local URLs
 
-## API Notes
+| Service | URL |
+| --- | --- |
+| Frontend | `http://localhost:5173` |
+| API through NGINX | `http://localhost:3000` |
+| Swagger | `http://localhost:3000/api/docs` in development, or when `SWAGGER_ENABLED=true` |
+| Grafana | `http://localhost:3001` |
+| Prometheus | `http://localhost:9090` |
+| RabbitMQ management | `http://localhost:15672` |
+| PostgreSQL from host | `127.0.0.1:5433` |
 
-- Most responses are wrapped as:
+## Useful development commands
 
-```json
-{
-  "data": {},
-  "timestamp": "2026-01-01T10:00:00.000Z"
-}
-```
+| Task | Directory | Command |
+| --- | --- | --- |
+| Backend tests | `backend` | `npm test` |
+| Frontend tests | `frontend` | `npm test` |
+| Backend lint check | `backend` | `npm run lint:check` |
+| Backend build | `backend` | `npm run build` |
+| Frontend build | `frontend` | `npm run build` |
+| Prisma Studio | `backend` | `npm run prisma:studio` |
+| Role seed | `backend` | `npm run seed:roles` |
+| Performance dataset | `backend` | `npm run seed:performance` |
+| Inventory k6 benchmark | `backend` | `npm run loadtest:inventory` |
 
-- Multi-tenancy is enforced by `shopId` route params + guard validation.
-- `SUPER_ADMIN` bypasses shop membership checks.
-- Important actions are written into `AuditLog`.
+The k6 script requires `API_BASE_URL`, `LOGIN_EMAIL`, and `LOGIN_PASSWORD`.
 
----
+## Architecture highlights
 
-## Continuous Integration
+- Three stateless API replicas behind round-robin NGINX
+- Redis cache-aside for the current shop gold rate with TTL and invalidation
+- Durable RabbitMQ invoice jobs with bounded retries, acknowledgements, and a dead-letter queue
+- Background PDF generation with idempotent status transitions and shared local storage
+- Prometheus metrics from every API replica with a provisioned Grafana dashboard
+- Dedicated ~10,000-item performance dataset and separate 10/50/100-VU k6 scenarios
+- IP-based rate limiting and graceful NestJS/Prisma shutdown
+- GitHub Actions validation for pushes and pull requests
 
-GitHub Actions validates every pull request and every push to `main`. Separate
-jobs install dependencies from the committed lockfiles, generate and validate
-the Prisma client/schema, run the backend Jest and frontend Vitest suites, run a
-non-mutating backend TypeScript static check, and build both applications. A dependent
-Docker job also builds the shared production backend image from
-`backend/Dockerfile` without publishing it.
+Rate limiting currently uses in-memory storage. Each API replica maintains its
+own counters, so limits are per replica rather than cluster-wide.
 
-CI intentionally does not run k6, start infrastructure containers, deploy the
-application, or push images to a registry. The current frontend has no configured
-lint script, so its CI job runs tests and the TypeScript/Vite production build.
+## CI
 
-The backend's existing ESLint fix command has no repository ESLint configuration
-or TypeScript parser yet. CI therefore uses the configured TypeScript compiler for
-its non-mutating check rather than relying on machine-specific ESLint state.
+GitHub Actions runs backend Jest tests, backend lint, frontend Vitest tests, and
+both production builds. It also generates and validates Prisma artifacts and
+builds the shared backend Docker image without publishing it.
 
----
+CI runs on pushes to every branch and pull requests targeting `master`. It does
+not run k6, start the infrastructure stack, or deploy the application.
 
-## Next Enhancements
+## Current deployment
 
-- Add unit/integration tests (Jest + Supertest)
-- Add PostgreSQL and infrastructure exporters where justified
-- Continue connection-pool and inventory-query performance analysis
-- Add RBAC permission matrix table and policy engine
-- Add CI pipeline and infrastructure manifests
+The project is not publicly deployed. The current deployment target is the local
+Docker Compose architecture documented above; no cloud environment or image
+registry is configured.
