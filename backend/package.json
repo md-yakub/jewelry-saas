@@ -11,6 +11,7 @@
     "start:prod": "node dist/main",
     "start:worker": "node dist/main.worker",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
+    "lint:check": "tsc --noEmit --pretty false -p tsconfig.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -19,7 +20,10 @@
     "seed:dev-user": "ts-node prisma/seeds/dev-user.seed.ts",
     "seed:super-admin": "ts-node prisma/seeds/super-admin.seed.ts",
     "seed:performance": "ts-node prisma/seed-performance.ts",
-    "loadtest:inventory": "k6 run ../performance/k6/inventory-baseline.js"
+    "loadtest:inventory": "k6 run ../performance/k6/inventory-baseline.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.2",
@@ -51,15 +55,18 @@
     "@types/amqplib": "^0.10.5",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.14.15",
     "@types/pdfkit": "^0.13.5",
     "@types/passport-jwt": "^4.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
     "prettier": "^3.3.3",
     "prisma": "^5.20.0",
     "ts-node": "^10.9.2",
+    "ts-jest": "^29.2.5",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.5.4"
   },
