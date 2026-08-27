@@ -101,7 +101,7 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env.docker
-    command: ["npm", "run", "start:worker"]
+    command: ["node", "dist/main.worker"]
     volumes:
       - invoice_pdfs:/app/storage/invoices
     depends_on:

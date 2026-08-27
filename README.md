@@ -190,6 +190,27 @@ targets and raw queries can be inspected at `http://localhost:9090`.
 
 ---
 
+## API Resilience
+
+The API applies IP-based, in-memory rate limiting before authentication. By
+default, normal traffic is limited to 600 requests per 60 seconds, while
+`POST /auth/login` and `POST /auth/register-shop` are limited to 10 requests per
+60 seconds. Exceeding a limit returns HTTP `429 Too Many Requests`.
+
+Limits are configurable with `RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_TTL_MS`,
+`AUTH_RATE_LIMIT_MAX_REQUESTS`, and `AUTH_RATE_LIMIT_TTL_MS`. The API trusts one
+proxy hop so client addresses forwarded by the local NGINX service are used.
+
+The limiter is intentionally process-local. Each of the three API replicas has
+its own counters, so the effective aggregate allowance behind round-robin NGINX
+can be up to three times the configured per-replica limit and counters reset when
+a replica restarts. A shared Redis-backed limiter is not implemented yet.
+
+NestJS shutdown hooks are enabled for API containers. On `SIGTERM` or `SIGINT`,
+Nest closes its application lifecycle and `PrismaService` disconnects cleanly.
+
+---
+
 ## Continuous Integration
 
 GitHub Actions validates every pull request and every push to `main`. Separate
