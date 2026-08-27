@@ -1,9 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-} from "@nestjs/common";
+import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { AuthUser } from "../common/types/auth-user.type";

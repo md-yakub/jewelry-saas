@@ -190,6 +190,25 @@ targets and raw queries can be inspected at `http://localhost:9090`.
 
 ---
 
+## Continuous Integration
+
+GitHub Actions validates every pull request and every push to `main`. Separate
+jobs install dependencies from the committed lockfiles, generate and validate
+the Prisma client/schema, run the backend Jest and frontend Vitest suites, run a
+non-mutating backend TypeScript static check, and build both applications. A dependent
+Docker job also builds the shared production backend image from
+`backend/Dockerfile` without publishing it.
+
+CI intentionally does not run k6, start infrastructure containers, deploy the
+application, or push images to a registry. The current frontend has no configured
+lint script, so its CI job runs tests and the TypeScript/Vite production build.
+
+The backend's existing ESLint fix command has no repository ESLint configuration
+or TypeScript parser yet. CI therefore uses the configured TypeScript compiler for
+its non-mutating check rather than relying on machine-specific ESLint state.
+
+---
+
 ## Next Enhancements
 
 - Add unit/integration tests (Jest + Supertest)

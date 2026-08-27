@@ -11,7 +11,7 @@ export type CurrencyFormatSettings = {
 
 export function formatCurrency(
   value: number | string | null | undefined,
-  settings?: CurrencyFormatSettings,
+  settings?: CurrencyFormatSettings | null,
 ) {
   const numericValue = Number(value ?? 0);
   const safeValue = Number.isFinite(numericValue) ? numericValue : 0;

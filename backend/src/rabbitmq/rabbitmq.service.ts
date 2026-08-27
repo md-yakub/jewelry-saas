@@ -5,11 +5,7 @@ import {
   OnModuleInit,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import {
-  ChannelModel,
-  ConfirmChannel,
-  ConsumeMessage,
-} from "amqplib";
+import { ChannelModel, ConfirmChannel, ConsumeMessage } from "amqplib";
 import * as amqp from "amqplib";
 import {
   INVOICE_JOB_DEAD_QUEUE,
@@ -43,7 +39,9 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     void this.getChannel().catch((error: unknown) => {
-      this.logger.warn(`RabbitMQ unavailable at startup: ${this.message(error)}`);
+      this.logger.warn(
+        `RabbitMQ unavailable at startup: ${this.message(error)}`,
+      );
     });
   }
 

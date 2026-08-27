@@ -7,7 +7,8 @@ export const ApiHealthCheck = () =>
   applyDecorators(
     ApiOperation({
       summary: "Health check",
-      description: "Returns a lightweight public health status for the backend.",
+      description:
+        "Returns a lightweight public health status for the backend.",
     }),
     ApiEnvelopeOk(HealthResponseDto, {
       status: "ok",

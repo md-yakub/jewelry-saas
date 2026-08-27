@@ -29,8 +29,8 @@ export class InvoiceWorker implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.rabbitMqService.consumeInvoiceJobs(
-      (job, message, channel) => this.handle(job, message, channel),
+    await this.rabbitMqService.consumeInvoiceJobs((job, message, channel) =>
+      this.handle(job, message, channel),
     );
   }
 
@@ -60,7 +60,9 @@ export class InvoiceWorker implements OnModuleInit {
           );
           return;
         } catch (retryError) {
-          await this.generator.markFailed(job, retryError).catch(() => undefined);
+          await this.generator
+            .markFailed(job, retryError)
+            .catch(() => undefined);
           channel.nack(message, false, false);
           return;
         }

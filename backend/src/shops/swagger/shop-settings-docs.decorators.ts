@@ -20,7 +20,8 @@ export const ApiShopSettingsGet = () =>
   applyDecorators(
     ApiOperation({
       summary: "Get shop settings",
-      description: "Returns currency and locale settings for the selected shop.",
+      description:
+        "Returns currency and locale settings for the selected shop.",
     }),
     shopParam(),
     ApiEnvelopeOk(ShopResponseDto),
@@ -31,7 +32,8 @@ export const ApiShopSettingsUpdate = () =>
   applyDecorators(
     ApiOperation({
       summary: "Update shop settings",
-      description: "Updates currency and locale settings for the selected shop.",
+      description:
+        "Updates currency and locale settings for the selected shop.",
     }),
     shopParam(),
     ApiEnvelopeOk(ShopResponseDto),

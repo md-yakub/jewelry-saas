@@ -3,16 +3,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import { InventoryService } from "./inventory.service";
 
 describe("InventoryService.findItems", () => {
-  const items = [
-    { id: "item-3" },
-    { id: "item-2" },
-    { id: "item-1" },
-  ];
+  const items = [{ id: "item-3" }, { id: "item-2" }, { id: "item-1" }];
   const prisma = {
-    jewelryItem: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-    },
+    jewelryItem: { findMany: jest.fn(), count: jest.fn() },
     $transaction: jest.fn(),
   };
   const service = new InventoryService(
@@ -20,7 +13,7 @@ describe("InventoryService.findItems", () => {
     {} as unknown as AuditLogsService,
   );
 
-  it("uses limit plus one, trims the lookahead, and returns an exact total when requested", async () => {
+  it("uses lookahead pagination and returns exact totals when requested", async () => {
     prisma.jewelryItem.findMany.mockResolvedValue(items);
     prisma.jewelryItem.count.mockResolvedValue(7);
     prisma.$transaction.mockImplementation(
@@ -55,7 +48,7 @@ describe("InventoryService.findItems", () => {
     });
   });
 
-  it("does not count rows when exact totals are disabled", async () => {
+  it("skips the count query when exact totals are disabled", async () => {
     prisma.jewelryItem.findMany.mockResolvedValue(items.slice(0, 2));
 
     const result = await service.findItems("shop-1", {

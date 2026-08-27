@@ -4,7 +4,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { ShopAccessGuard } from "./shop-access.guard";
 
 describe("ShopAccessGuard", () => {
-  it("rejects a user who has no membership in the requested shop", async () => {
+  it("rejects a user without membership in the requested shop", async () => {
     const request = {
       user: { userId: "user-1", isSuperAdmin: false },
       params: { shopId: "shop-b" },

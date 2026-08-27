@@ -66,7 +66,11 @@ export const ApiSalesCreate = () =>
             paymentMethod: "MIXED",
             payments: [
               { method: "CASH", amount: 31145.5 },
-              { method: "CARD", amount: 30000, reference: "CARD-APPROVAL-7788" },
+              {
+                method: "CARD",
+                amount: 30000,
+                reference: "CARD-APPROVAL-7788",
+              },
             ],
             oldGoldExchangeIds: ["ogx_01J1Z8X4Y5Q6R7S8T9V0W1X2Y3"],
             discountAmount: 500,
@@ -142,7 +146,8 @@ export const ApiSalesInvoicePdfStatus = () =>
   applyDecorators(
     ApiOperation({
       summary: "Get invoice PDF status",
-      description: "Returns background PDF generation state for a sale invoice.",
+      description:
+        "Returns background PDF generation state for a sale invoice.",
     }),
     shopParam(),
     saleParam(),

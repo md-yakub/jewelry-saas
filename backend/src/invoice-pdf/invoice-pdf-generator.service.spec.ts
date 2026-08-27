@@ -5,7 +5,7 @@ import { InvoicePdfGeneratorService } from "./invoice-pdf-generator.service";
 import { InvoicePdfStorageService } from "./invoice-pdf-storage.service";
 
 describe("InvoicePdfGeneratorService", () => {
-  it("treats an existing READY file as an idempotent redelivery", async () => {
+  it("treats a READY invoice with an existing file as an idempotent redelivery", async () => {
     const job: InvoiceGenerationJob = {
       jobId: "job-1",
       shopId: "shop-1",

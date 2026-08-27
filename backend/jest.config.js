@@ -9,5 +9,5 @@ module.exports = {
     "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/../tsconfig.json" }],
   },
   collectCoverageFrom: ["**/*.ts", "!**/*.module.ts", "!main*.ts"],
-  coverageDirectory: "../coverage",
+  coverageDirectory: "<rootDir>/../coverage",
 };

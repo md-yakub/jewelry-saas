@@ -41,47 +41,40 @@ describe("AuthService.login", () => {
       locale: "en-US",
     },
   };
-
-  const prismaMock = {
-    user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    shopMember: {
-      findMany: jest.fn(),
-    },
+  const prisma = {
+    user: { findUnique: jest.fn(), update: jest.fn() },
+    shopMember: { findMany: jest.fn() },
   };
-  const jwtMock = {
-    signAsync: jest.fn(),
-  };
+  const jwt = { signAsync: jest.fn() };
   const configValues: Record<string, string> = {
     JWT_ACCESS_SECRET: "access-secret",
     JWT_REFRESH_SECRET: "refresh-secret",
     JWT_ACCESS_EXPIRES_IN: "15m",
     JWT_REFRESH_EXPIRES_IN: "7d",
   };
-  const configMock = {
+  const config = {
     getOrThrow: jest.fn((key: string) => configValues[key]),
-    get: jest.fn((key: string, fallback: string) => configValues[key] ?? fallback),
+    get: jest.fn(
+      (key: string, fallback: string) => configValues[key] ?? fallback,
+    ),
   };
-
   let service: AuthService;
 
   beforeEach(() => {
     service = new AuthService(
-      prismaMock as unknown as PrismaService,
-      jwtMock as unknown as JwtService,
-      configMock as unknown as ConfigService,
+      prisma as unknown as PrismaService,
+      jwt as unknown as JwtService,
+      config as unknown as ConfigService,
     );
   });
 
-  it("returns tokens and the default shop membership for valid credentials", async () => {
-    prismaMock.user.findUnique.mockResolvedValue(user);
-    prismaMock.shopMember.findMany.mockResolvedValue([membership]);
-    prismaMock.user.update.mockResolvedValue(user);
+  it("returns tokens and the default membership for valid credentials", async () => {
+    prisma.user.findUnique.mockResolvedValue(user);
+    prisma.shopMember.findMany.mockResolvedValue([membership]);
+    prisma.user.update.mockResolvedValue(user);
     comparePassword.mockResolvedValue(true);
     hashPassword.mockResolvedValue("refresh-token-hash");
-    jwtMock.signAsync
+    jwt.signAsync
       .mockResolvedValueOnce("access-token")
       .mockResolvedValueOnce("refresh-token");
 
@@ -90,7 +83,7 @@ describe("AuthService.login", () => {
       password: "correct-password",
     });
 
-    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { email: "owner@example.com" },
     });
     expect(result).toMatchObject({
@@ -98,19 +91,16 @@ describe("AuthService.login", () => {
       refreshToken: "refresh-token",
       membership,
       memberships: [membership],
-      user: {
-        id: user.id,
-        email: user.email,
-      },
+      user: { id: user.id, email: user.email },
     });
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
+    expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: user.id },
       data: { refreshTokenHash: "refresh-token-hash" },
     });
   });
 
-  it("rejects an invalid password without attempting token generation", async () => {
-    prismaMock.user.findUnique.mockResolvedValue(user);
+  it("rejects an invalid password without generating tokens", async () => {
+    prisma.user.findUnique.mockResolvedValue(user);
     comparePassword.mockResolvedValue(false);
 
     await expect(
@@ -121,6 +111,6 @@ describe("AuthService.login", () => {
       "incorrect-password",
       user.passwordHash,
     );
-    expect(jwtMock.signAsync).not.toHaveBeenCalled();
+    expect(jwt.signAsync).not.toHaveBeenCalled();
   });
 });
