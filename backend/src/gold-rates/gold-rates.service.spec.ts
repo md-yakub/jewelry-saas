@@ -25,13 +25,7 @@ describe("GoldRatesService current-rate cache", () => {
     delete: jest.fn(),
   };
   const auditLogs = { create: jest.fn() };
-<<<<<<< HEAD
   const config = { get: jest.fn().mockReturnValue("600") };
-=======
-  const config = {
-    get: jest.fn().mockReturnValue("600"),
-  };
->>>>>>> origin/master
   const service = new GoldRatesService(
     prisma as unknown as PrismaService,
     auditLogs as unknown as AuditLogsService,
@@ -44,28 +38,16 @@ describe("GoldRatesService current-rate cache", () => {
     cache.get.mockResolvedValue(rate);
 
     await expect(service.getCurrent("shop-1")).resolves.toBe(rate);
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/master
     expect(cache.get).toHaveBeenCalledWith(cacheKey);
     expect(prisma.goldRate.findFirst).not.toHaveBeenCalled();
     expect(cache.set).not.toHaveBeenCalled();
   });
 
-<<<<<<< HEAD
   it("queries PostgreSQL and caches the result on a miss", async () => {
-=======
-  it("queries PostgreSQL and fills the tenant-scoped cache on a miss", async () => {
->>>>>>> origin/master
     cache.get.mockResolvedValue(null);
     prisma.goldRate.findFirst.mockResolvedValue(rate);
 
     await expect(service.getCurrent("shop-1")).resolves.toBe(rate);
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/master
     expect(prisma.goldRate.findFirst).toHaveBeenCalledWith({
       where: { shopId: "shop-1" },
       orderBy: { effectiveDate: "desc" },
@@ -73,11 +55,7 @@ describe("GoldRatesService current-rate cache", () => {
     expect(cache.set).toHaveBeenCalledWith(cacheKey, rate, 600);
   });
 
-<<<<<<< HEAD
   it("invalidates the tenant-scoped key after creating a rate", async () => {
-=======
-  it("invalidates the current-rate key after persisting a new rate", async () => {
->>>>>>> origin/master
     prisma.goldRate.create.mockResolvedValue(rate);
     cache.delete.mockResolvedValue(undefined);
     auditLogs.create.mockResolvedValue(undefined);
