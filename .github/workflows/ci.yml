@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-  push:
     branches:
-      - main
+      - master
+  push:
 
 permissions:
   contents: read
@@ -85,6 +85,7 @@ jobs:
     timeout-minutes: 15
     needs:
       - backend
+      - frontend
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
