@@ -207,7 +207,8 @@ export const ApiInventoryUpdateCategory = () =>
   applyDecorators(
     ApiOperation({
       summary: "Update inventory category",
-      description: "Updates a category name or description within the selected shop.",
+      description:
+        "Updates a category name or description within the selected shop.",
     }),
     shopParam(),
     categoryParam(),
@@ -229,6 +230,8 @@ export const ApiInventoryDeleteCategory = () =>
     }),
     shopParam(),
     categoryParam(),
-    ApiEnvelopeOk(MessageResponseDto, { message: "Category deleted successfully" }),
+    ApiEnvelopeOk(MessageResponseDto, {
+      message: "Category deleted successfully",
+    }),
     ApiStandardErrors({ forbidden: true, notFound: true, internal: true }),
   );

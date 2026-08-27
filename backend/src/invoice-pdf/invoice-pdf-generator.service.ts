@@ -47,7 +47,9 @@ export class InvoicePdfGeneratorService {
       throw new PermanentInvoiceJobError("Invoice does not exist in this shop");
     }
     if (invoice.pdfJobId !== job.jobId) {
-      throw new PermanentInvoiceJobError("Invoice job identifier does not match");
+      throw new PermanentInvoiceJobError(
+        "Invoice job identifier does not match",
+      );
     }
     if (
       invoice.pdfStatus === InvoicePdfStatus.READY &&
@@ -80,7 +82,9 @@ export class InvoicePdfGeneratorService {
     });
 
     if (claimed.count !== 1) {
-      throw new PermanentInvoiceJobError("Invoice job can no longer be claimed");
+      throw new PermanentInvoiceJobError(
+        "Invoice job can no longer be claimed",
+      );
     }
 
     const relativePath = await this.storage.writePdf(
@@ -124,10 +128,9 @@ export class InvoicePdfGeneratorService {
     status: InvoicePdfStatus,
     error: unknown,
   ): Promise<void> {
-    const reason = (error instanceof Error ? error.message : String(error)).slice(
-      0,
-      500,
-    );
+    const reason = (
+      error instanceof Error ? error.message : String(error)
+    ).slice(0, 500);
     await this.prisma.invoice.updateMany({
       where: {
         id: job.invoiceId,
@@ -223,9 +226,12 @@ export class InvoicePdfGeneratorService {
     document.fontSize(10).text(`Subtotal: ${money(invoice.sale.subtotal)}`, {
       align: "right",
     });
-    document.text(`Old gold deduction: ${money(invoice.sale.oldGoldDeduction)}`, {
-      align: "right",
-    });
+    document.text(
+      `Old gold deduction: ${money(invoice.sale.oldGoldDeduction)}`,
+      {
+        align: "right",
+      },
+    );
     document.text(`Tax: ${money(invoice.sale.taxAmount)}`, { align: "right" });
     document.text(`Discount: ${money(invoice.sale.discountAmount)}`, {
       align: "right",

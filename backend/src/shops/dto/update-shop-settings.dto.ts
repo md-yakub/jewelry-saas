@@ -1,7 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsIn, IsLocale } from "class-validator";
 
-export const SUPPORTED_CURRENCY_CODES = ["BDT", "INR", "PKR", "EUR", "USD"] as const;
+export const SUPPORTED_CURRENCY_CODES = [
+  "BDT",
+  "INR",
+  "PKR",
+  "EUR",
+  "USD",
+] as const;
 
 export class UpdateShopSettingsDto {
   @ApiProperty({

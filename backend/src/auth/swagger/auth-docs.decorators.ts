@@ -76,7 +76,8 @@ export const ApiAuthRefresh = () =>
     HttpCode(HttpStatus.OK),
     ApiOperation({
       summary: "Refresh token",
-      description: "Rotates a valid refresh token and returns a new token pair.",
+      description:
+        "Rotates a valid refresh token and returns a new token pair.",
     }),
     ApiEnvelopeOk(TokenRefreshResponseDto),
     ApiStandardErrors({ unauthorized: true, internal: true }),
@@ -99,7 +100,8 @@ export const ApiAuthMe = () =>
     ApiBearerAuth("access-token"),
     ApiOperation({
       summary: "Current user",
-      description: "Returns the authenticated user profile and shop memberships.",
+      description:
+        "Returns the authenticated user profile and shop memberships.",
     }),
     ApiEnvelopeOk(UserSummaryResponseDto),
     ApiStandardErrors({ unauthorized: true, internal: true }),

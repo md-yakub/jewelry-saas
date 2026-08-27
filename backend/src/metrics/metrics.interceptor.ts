@@ -26,8 +26,7 @@ export class MetricsInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         error: (error: unknown) => {
-          statusCode =
-            error instanceof HttpException ? error.getStatus() : 500;
+          statusCode = error instanceof HttpException ? error.getStatus() : 500;
         },
       }),
       finalize(() => {

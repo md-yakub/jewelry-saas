@@ -54,7 +54,9 @@ describe("AuthService.login", () => {
   };
   const config = {
     getOrThrow: jest.fn((key: string) => configValues[key]),
-    get: jest.fn((key: string, fallback: string) => configValues[key] ?? fallback),
+    get: jest.fn(
+      (key: string, fallback: string) => configValues[key] ?? fallback,
+    ),
   };
   let service: AuthService;
 

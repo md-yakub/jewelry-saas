@@ -41,7 +41,7 @@ export class SuperAdminService {
   }
 
   async users(query: QuerySuperAdminUsersDto) {
-    const { page, limit, search, isActive, isSuperAdmin } = query;
+    const { limit, search, isActive, isSuperAdmin } = query;
     const where: Prisma.UserWhereInput = {
       ...(isActive !== undefined ? { isActive } : {}),
       ...(isSuperAdmin !== undefined ? { isSuperAdmin } : {}),
@@ -78,7 +78,7 @@ export class SuperAdminService {
   }
 
   async shops(query: QuerySuperAdminShopsDto) {
-    const { page, limit, search, isActive } = query;
+    const { limit, search, isActive } = query;
     const where: Prisma.ShopWhereInput = {
       ...(isActive !== undefined ? { isActive } : {}),
       ...(search
