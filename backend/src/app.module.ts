@@ -13,6 +13,7 @@ import { CustomersModule } from "./customers/customers.module";
 import { CustomOrdersModule } from "./custom-orders/custom-orders.module";
 import { GoldRatesModule } from "./gold-rates/gold-rates.module";
 import { InventoryModule } from "./inventory/inventory.module";
+import { MetricsModule } from "./metrics/metrics.module";
 import { OldGoldExchangesModule } from "./old-gold-exchanges/old-gold-exchanges.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RabbitMqModule } from "./rabbitmq/rabbitmq.module";
@@ -28,6 +29,7 @@ import { SuperAdminModule } from "./super-admin/super-admin.module";
     PrismaModule,
     RabbitMqModule,
     RedisCacheModule,
+    MetricsModule,
     AuthModule,
     InventoryModule,
     GoldRatesModule,

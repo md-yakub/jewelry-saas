@@ -8,6 +8,7 @@ Full-stack multi-tenant Jewelry Shop SaaS built with:
 - Frontend: React + Vite + TypeScript + Tailwind
 - Docs: Swagger/OpenAPI at `/api/docs`
 - Deployment: Docker + docker-compose
+- Observability: Prometheus metrics + provisioned Grafana dashboard
 
 ---
 
@@ -121,6 +122,10 @@ Services:
 - Three internal NestJS replicas: `api-1`, `api-2`, and `api-3`
 - One-shot Prisma migration service: `migrate`
 - PostgreSQL: `127.0.0.1:5433`
+- Redis: `127.0.0.1:6379`
+- RabbitMQ management UI: `http://localhost:15672`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
 
 NGINX distributes requests across the three API replicas. Responses include an
 `X-Instance-Id` header so the selected replica can be observed.
@@ -131,6 +136,40 @@ Invoice numbers are currently generated from the shop's invoice count. Concurren
 sale creation can therefore attempt the same invoice number and trigger the
 database uniqueness constraint. This write path requires separate concurrency
 hardening; it is intentionally unchanged in the initial replica setup.
+
+## Monitoring
+
+Each NestJS replica exposes Prometheus-format metrics at `/metrics`. Prometheus
+scrapes `api-1:3000`, `api-2:3000`, and `api-3:3000` directly over the Docker
+network; NGINX is not part of the scrape path. Grafana is provisioned with the
+Prometheus datasource and the **Jewelry SaaS API Overview** dashboard.
+
+The dashboard includes:
+
+- Requests per second
+- P95 and P99 HTTP latency
+- HTTP error rate
+- Request count and request rate by API replica
+- Node.js resident memory and CPU usage by replica
+
+HTTP metrics use normalized NestJS route templates, such as
+`/shops/:shopId/items`. Tenant identifiers, user identifiers, emails, and raw URL
+IDs are not used as labels.
+
+After starting the Docker stack, open Grafana at `http://localhost:3001` (the
+initial local login is `admin` / `admin`) and select the provisioned dashboard.
+Run the existing inventory benchmark in another terminal while watching it:
+
+```bash
+cd backend
+API_BASE_URL=http://localhost:3000 \
+LOGIN_EMAIL=benchmark@example.local \
+LOGIN_PASSWORD=your-benchmark-password \
+npm run loadtest:inventory
+```
+
+Replace the example credentials with the dedicated performance user. Prometheus
+targets and raw queries can be inspected at `http://localhost:9090`.
 
 ---
 
@@ -154,7 +193,7 @@ hardening; it is intentionally unchanged in the initial replica setup.
 ## Next Enhancements
 
 - Add unit/integration tests (Jest + Supertest)
-- Add PDF invoice rendering service
-- Add Redis + BullMQ for heavy reports/background tasks
+- Add PostgreSQL and infrastructure exporters where justified
+- Continue connection-pool and inventory-query performance analysis
 - Add RBAC permission matrix table and policy engine
 - Add CI pipeline and infrastructure manifests
